@@ -7,7 +7,10 @@ import { publishedNotes } from "../../generated/published-notes";
   <h1>笔记</h1>
   <ul>
     {publishedNotes.map((note) => (
-      <li><a href={note.noteUrl}>{note.title}</a> <time datetime={note.date}>{note.date}</time></li>
+      <li>
+        <a href={note.noteUrl}>{note.title}</a> <time datetime={note.date}>{note.date}</time>
+        {note.tags.length > 0 && <span aria-label="标签">{note.tags.join(", ")}</span>}
+      </li>
     ))}
   </ul>
 </BaseLayout>

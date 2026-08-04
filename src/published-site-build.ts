@@ -2,6 +2,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { spawn } from "node:child_process";
+import { parse } from "yaml";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const generatedNotesPath = join(projectRoot, "src", "generated", "published-notes.ts");
@@ -12,8 +13,10 @@ export interface PublishedSiteBuildInput {
 }
 
 type PublishedNote = {
+  sourcePath: string;
   title: string;
   date: string;
+  tags: string[];
   noteUrl: string;
   renderedContent: string;
 };
@@ -41,17 +44,20 @@ async function readPublishedNotes(vaultRoot: string): Promise<PublishedNote[]> {
   const notePaths = await markdownFilesIn(vaultRoot);
   const notes = await Promise.all(notePaths.map(async (notePath) => {
     const source = await readFile(notePath, "utf8");
-    const { frontmatter, body } = splitFrontmatter(source);
-    if (frontmatter.published !== "true") return undefined;
+    const { frontmatter, body } = parseFrontmatter(source, notePath);
+    if (frontmatter.published !== true) return undefined;
 
-    const title = frontmatter.title ?? basename(notePath, extname(notePath));
-    const date = frontmatter.date ?? "";
-    const relativePath = relative(vaultRoot, notePath).replace(/\.md$/, "");
-    const noteUrl = `/notes/${relativePath.split("/").map(slugify).join("/")}/`;
-    return { title, date, noteUrl, renderedContent: renderMarkdown(body) };
+    const sourcePath = relative(vaultRoot, notePath).replaceAll("\\", "/");
+    const title = stringValue(frontmatter.title) ?? basename(notePath, extname(notePath));
+    const date = validDate(frontmatter.date, sourcePath);
+    const tags = canonicalTags(frontmatter.tags, sourcePath);
+    const noteUrl = noteUrlFor(frontmatter.slug, sourcePath);
+    return { sourcePath, title, date, tags, noteUrl, renderedContent: renderMarkdown(body) };
   }));
 
-  return notes.filter((note): note is PublishedNote => note !== undefined);
+  const publishedNotes = notes.filter((note): note is PublishedNote => note !== undefined);
+  assertUniqueNoteUrls(publishedNotes);
+  return publishedNotes.sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, "zh-CN"));
 }
 
 async function markdownFilesIn(directory: string): Promise<string[]> {
@@ -61,21 +67,68 @@ async function markdownFilesIn(directory: string): Promise<string[]> {
     if (entry.isDirectory()) return markdownFilesIn(entryPath);
     return entry.isFile() && extname(entry.name) === ".md" ? [entryPath] : [];
   }));
-  return paths.flat();
+  return paths.flat().sort((left, right) => left.localeCompare(right, "en"));
 }
 
-function splitFrontmatter(source: string): { frontmatter: Record<string, string>; body: string } {
+function parseFrontmatter(source: string, notePath: string): { frontmatter: Record<string, unknown>; body: string } {
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: source };
-  const frontmatter = Object.fromEntries(match[1].split(/\r?\n/).flatMap((line) => {
-    const separator = line.indexOf(":");
-    return separator === -1 ? [] : [[line.slice(0, separator).trim(), line.slice(separator + 1).trim().replace(/^['\"]|['\"]$/g, "")]];
-  }));
-  return { frontmatter, body: match[2] };
+  const frontmatter = parse(match[1]);
+  if (frontmatter === null || typeof frontmatter !== "object" || Array.isArray(frontmatter)) {
+    throw new Error(`Invalid Frontmatter in Published Note ${notePath}.`);
+  }
+  return { frontmatter: frontmatter as Record<string, unknown>, body: match[2] };
 }
 
-function slugify(segment: string): string {
-  return segment.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "note";
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+}
+
+function validDate(value: unknown, sourcePath: string): string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(`Published Note ${sourcePath} requires a valid date in YYYY-MM-DD format.`);
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (candidate.getUTCFullYear() !== year || candidate.getUTCMonth() !== month - 1 || candidate.getUTCDate() !== day) {
+    throw new Error(`Published Note ${sourcePath} requires a valid date in YYYY-MM-DD format.`);
+  }
+  return value;
+}
+
+function canonicalTags(value: unknown, sourcePath: string): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((tag) => typeof tag !== "string")) {
+    throw new Error(`Published Note ${sourcePath} must provide tags as a YAML list of strings.`);
+  }
+  const tags = new Map<string, string>();
+  for (const tag of value) {
+    const canonical = tag.normalize("NFKC").trim().toLowerCase();
+    if (canonical) tags.set(canonical, canonical);
+  }
+  return [...tags.values()];
+}
+
+function noteUrlFor(slug: unknown, sourcePath: string): string {
+  if (slug === undefined) {
+    const pathWithoutExtension = sourcePath.replace(/\.md$/, "");
+    return `/notes/${pathWithoutExtension.split("/").map(encodeURIComponent).join("/")}/`;
+  }
+  if (typeof slug !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    throw new Error(`Published Note ${sourcePath} has an invalid slug: ${String(slug)}.`);
+  }
+  return `/notes/${slug}/`;
+}
+
+function assertUniqueNoteUrls(notes: PublishedNote[]): void {
+  const notesByUrl = new Map<string, PublishedNote>();
+  for (const note of notes) {
+    const existing = notesByUrl.get(note.noteUrl);
+    if (existing) {
+      throw new Error(`Note URL Conflict: ${existing.sourcePath} and ${note.sourcePath} both resolve to ${note.noteUrl}.`);
+    }
+    notesByUrl.set(note.noteUrl, note);
+  }
 }
 
 function renderMarkdown(markdown: string): string {
@@ -87,7 +140,8 @@ function escapeHtml(value: string): string {
 }
 
 function renderGeneratedNotesModule(notes: PublishedNote[]): string {
-  return `export type PublishedNote = { title: string; date: string; noteUrl: string; renderedContent: string };\n\nexport const publishedNotes: PublishedNote[] = ${JSON.stringify(notes, null, 2)};\n`;
+  const publicNotes = notes.map(({ sourcePath: _sourcePath, ...note }) => note);
+  return `export type PublishedNote = { title: string; date: string; tags: string[]; noteUrl: string; renderedContent: string };\n\nexport const publishedNotes: PublishedNote[] = ${JSON.stringify(publicNotes, null, 2)};\n`;
 }
 
 function runAstroBuild(outputDirectory: string): Promise<void> {
