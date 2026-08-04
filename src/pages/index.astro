@@ -1,0 +1,13 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../site-config";
+---
+
+<BaseLayout title={siteConfig.home.title.join("")}>
+  <section class="home-introduction" aria-labelledby="home-title">
+    <p class="section-kicker">{siteConfig.home.eyebrow}</p>
+    <h1 id="home-title">{siteConfig.home.title[0]}<br />{siteConfig.home.title[1]}</h1>
+    <p>{siteConfig.home.description}</p>
+    <a class="primary-link" href="/notes/">{siteConfig.home.ctaLabel}<span aria-hidden="true"> →</span></a>
+  </section>
+</BaseLayout>

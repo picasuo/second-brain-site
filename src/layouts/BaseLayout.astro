@@ -21,9 +21,224 @@ const { title } = Astro.props;
 </html>
 
 <style is:global>
-  :root { color-scheme: light; font-family: ui-serif, Georgia, serif; }
-  body { margin: 0; color: #1d2329; background: #fafaf7; }
-  main { width: min(100% - 2rem, 44rem); margin: 0 auto; padding: 4rem 0; }
-  a { color: #075985; }
-  article { font-size: 1.125rem; line-height: 1.7; }
+  :root {
+    color-scheme: light dark;
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --accent: #075985;
+    --accent-strong: #0c4a6e;
+    --canvas: #f7f9f8;
+    --ink: #17212b;
+    --muted: #52616f;
+    --rule: #cbd5da;
+    --surface: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    min-width: 20rem;
+    margin: 0;
+    color: var(--ink);
+    background: var(--canvas);
+    text-rendering: optimizeLegibility;
+  }
+
+  main {
+    width: min(calc(100% - 2rem), 70rem);
+    margin: 0 auto;
+    padding: 3rem 0 5rem;
+  }
+
+  a {
+    color: var(--accent-strong);
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.16em;
+  }
+
+  a:hover { color: var(--accent); }
+
+  a:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 0.22rem;
+  }
+
+  .section-kicker,
+  .note-metadata,
+  .tag-list,
+  .note-index time {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .section-kicker {
+    margin: 0 0 1.25rem;
+    color: var(--accent-strong);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .home-introduction {
+    display: grid;
+    align-content: center;
+    min-height: calc(100dvh - 8rem);
+    max-width: 58rem;
+    padding: 2rem 0;
+  }
+
+  .home-introduction h1,
+  .notes-index h1,
+  .note h1 {
+    margin: 0;
+    font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+
+  .home-introduction h1 {
+    max-width: 16ch;
+    font-size: clamp(2.7rem, 7vw, 4.75rem);
+    line-height: 1.03;
+  }
+
+  .home-introduction > p:not(.section-kicker) {
+    max-width: 43rem;
+    margin: 2rem 0;
+    color: var(--muted);
+    font-size: clamp(1.05rem, 2vw, 1.22rem);
+    line-height: 1.85;
+  }
+
+  .primary-link {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--accent-strong);
+    border-radius: 0.35rem;
+    color: var(--surface);
+    background: var(--accent-strong);
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 160ms ease, transform 160ms ease;
+  }
+
+  .primary-link:hover { color: var(--surface); background: var(--accent); }
+  .primary-link:active { transform: translateY(1px); }
+
+  .notes-index { max-width: 52rem; }
+  .notes-index h1 { font-size: clamp(2.3rem, 5vw, 4.25rem); line-height: 1.08; }
+  .notes-index > p { max-width: 38rem; margin: 1.25rem 0 3.5rem; color: var(--muted); line-height: 1.75; }
+
+  .note-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .note-list > li { border-top: 1px solid var(--rule); }
+  .note-list > li:last-child { border-bottom: 1px solid var(--rule); }
+
+  .note-list article { padding: 1.55rem 0 1.65rem; }
+  .note-list h2 { margin: 0; font-family: ui-serif, Georgia, Cambria, serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 600; line-height: 1.2; }
+  .note-list h2 a { color: var(--ink); text-decoration: none; }
+  .note-list h2 a:hover { color: var(--accent-strong); text-decoration: underline; text-decoration-thickness: 0.08em; }
+
+  .note-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 1rem;
+    align-items: baseline;
+    margin-top: 0.7rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tag-list li {
+    padding: 0.08rem 0.38rem;
+    border: 1px solid var(--rule);
+    border-radius: 0.25rem;
+    color: var(--muted);
+  }
+
+  .note { max-width: 70rem; }
+  .return-link { display: inline-block; margin-bottom: 3rem; font-size: 0.95rem; font-weight: 650; }
+  .note-header { max-width: 50rem; margin-bottom: 2.5rem; }
+  .note h1 { font-size: clamp(2.35rem, 6vw, 4.8rem); line-height: 1.08; }
+  .note-header .note-metadata { margin-top: 1.2rem; }
+
+  .note-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 12.5rem;
+    grid-template-areas: "content toc";
+    gap: clamp(2rem, 6vw, 6rem);
+    align-items: start;
+  }
+
+  .table-of-contents {
+    grid-area: toc;
+    position: sticky;
+    top: 1.5rem;
+    padding-left: 1rem;
+    border-left: 1px solid var(--rule);
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .table-of-contents > strong { display: block; margin-bottom: 0.8rem; color: var(--muted); font-size: 0.74rem; letter-spacing: 0.08em; }
+  .table-of-contents ol { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+  .table-of-contents .depth-3 { padding-left: 0.8rem; }
+  .table-of-contents a { color: var(--muted); text-decoration: none; }
+  .table-of-contents a:hover { color: var(--accent-strong); text-decoration: underline; }
+
+  .note-body { grid-area: content; min-width: 0; font-family: ui-serif, Georgia, Cambria, serif; font-size: clamp(1.06rem, 1.8vw, 1.2rem); line-height: 1.85; }
+  .note-body > :first-child { margin-top: 0; }
+  .note-body > :last-child { margin-bottom: 0; }
+  .note-body h2, .note-body h3 { margin-top: 2.9em; scroll-margin-top: 1.5rem; line-height: 1.2; }
+  .note-body h2 { font-size: 1.65em; }
+  .note-body h3 { font-size: 1.28em; }
+  .note-body blockquote { margin: 1.8rem 0; padding: 0.25rem 0 0.25rem 1.15rem; border-left: 0.2rem solid var(--accent); color: var(--muted); }
+  .note-body hr { height: 1px; margin: 2.5rem 0; border: 0; background: var(--rule); }
+  .note-body code { padding: 0.1em 0.3em; border-radius: 0.18rem; background: color-mix(in srgb, var(--accent) 10%, transparent); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.84em; }
+  .note-body pre { overflow-x: auto; padding: 1rem 1.15rem; border-radius: 0.35rem; color: #e8f1f5; background: #17212b; line-height: 1.6; }
+  .note-body pre code { padding: 0; background: transparent; color: inherit; }
+  .note-body table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.82em; }
+  .note-body th, .note-body td { padding: 0.65rem 0.75rem; border: 1px solid var(--rule); text-align: left; }
+  .note-body th { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .note-body img { display: block; max-width: 100%; height: auto; }
+
+  @media (max-width: 48rem) {
+    main { width: min(calc(100% - 2rem), 44rem); padding: 1.5rem 0 3.5rem; }
+    .home-introduction { min-height: calc(100dvh - 5rem); }
+    .note-layout { grid-template-columns: 1fr; grid-template-areas: "toc" "content"; gap: 2.5rem; }
+    .table-of-contents { position: static; padding: 1rem; border: 1px solid var(--rule); border-radius: 0.35rem; }
+    .return-link { margin-bottom: 2rem; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --accent: #38bdf8;
+      --accent-strong: #7dd3fc;
+      --canvas: #11191f;
+      --ink: #e7eef1;
+      --muted: #b2c0c7;
+      --rule: #3c4b54;
+      --surface: #11191f;
+    }
+
+    .note-list h2 a { color: var(--ink); }
+    .note-body pre { background: #071015; }
+  }
 </style>

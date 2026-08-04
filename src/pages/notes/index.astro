@@ -4,13 +4,26 @@ import { publishedNotes } from "../../generated/published-notes";
 ---
 
 <BaseLayout title="笔记">
-  <h1>笔记</h1>
-  <ul>
-    {publishedNotes.map((note) => (
-      <li>
-        <a href={note.noteUrl}>{note.title}</a> <time datetime={note.date}>{note.date}</time>
-        {note.tags.length > 0 && <span aria-label="标签">{note.tags.join(", ")}</span>}
-      </li>
-    ))}
-  </ul>
+  <section class="notes-index" aria-labelledby="notes-title">
+    <p class="section-kicker">已发布笔记</p>
+    <h1 id="notes-title">笔记</h1>
+    <p>从日常实践中整理出的可公开记录，按发布日期排列。</p>
+    <ol class="note-list">
+      {publishedNotes.map((note) => (
+        <li>
+          <article>
+            <h2><a href={note.noteUrl}>{note.title}</a></h2>
+            <div class="note-metadata">
+              <time datetime={note.date}>{note.date}</time>
+              {note.tags.length > 0 && (
+                <ul class="tag-list" aria-label="标签">
+                  {note.tags.map((tag) => <li>{tag}</li>)}
+                </ul>
+              )}
+            </div>
+          </article>
+        </li>
+      ))}
+    </ol>
+  </section>
 </BaseLayout>

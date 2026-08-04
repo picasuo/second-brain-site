@@ -13,17 +13,29 @@ const { note } = Astro.props;
 ---
 
 <BaseLayout title={note.title}>
-  <article>
-    <p><a href="/notes/">返回笔记</a></p>
-    <h1>{note.title}</h1>
-    <time datetime={note.date}>{note.date}</time>
+  <article class="note">
+    <a class="return-link" href="/notes/">← 返回笔记</a>
+    <header class="note-header">
+      <h1>{note.title}</h1>
+      <div class="note-metadata">
+        <time datetime={note.date}>{note.date}</time>
+        {note.tags.length > 0 && (
+          <ul class="tag-list" aria-label="标签">
+            {note.tags.map((tag) => <li>{tag}</li>)}
+          </ul>
+        )}
+      </div>
+    </header>
+    <div class="note-layout">
     {note.tableOfContents.length > 0 && (
-      <nav aria-label="目录">
+      <nav class="table-of-contents" aria-label="目录">
+        <strong>目录</strong>
         <ol>
           {note.tableOfContents.map((item) => <li class={`depth-${item.depth}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
         </ol>
       </nav>
     )}
-    <div set:html={note.renderedContent} />
+      <div class="note-body" set:html={note.renderedContent} />
+    </div>
   </article>
 </BaseLayout>

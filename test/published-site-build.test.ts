@@ -29,6 +29,24 @@ test("a Vault Revision with one Published Note produces a Notes Index and public
   expect(notePage).toContain("A fixture Vault Revision is the explicit source for this published page.");
 });
 
+test("Home introduces the site and offers the only entry into the Notes Index", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/one-published-note/", import.meta.url),
+    outputDirectory,
+  });
+
+  const home = await readFile(join(outputDirectory, "index.html"), "utf8");
+
+  expect(home).toContain("你好，这里是我整理思考与实践的地方。");
+  expect(home).toContain('href="/notes/"');
+  expect(home).toContain("浏览笔记");
+  expect(home).not.toContain("First Published Note");
+  expect(home).not.toContain("<nav");
+});
+
 test("a Publish Set excludes private notes, orders Published Notes, and exposes Canonical Tag", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);
@@ -39,6 +57,7 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
   });
 
   const notesIndex = await readFile(join(outputDirectory, "notes", "index.html"), "utf8");
+  const alphaNote = await readFile(join(outputDirectory, "notes", "alpha-release", "index.html"), "utf8");
 
   expect(notesIndex).toContain("latest-note");
   expect(notesIndex).toContain('href="/notes/alpha-release/"');
@@ -50,6 +69,11 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
   await expect(readFile(join(outputDirectory, "notes", "private", "index.html"), "utf8")).rejects.toThrow("ENOENT");
   expect(notesIndex.indexOf("latest-note")).toBeLessThan(notesIndex.indexOf("Alpha"));
   expect(notesIndex.indexOf("Alpha")).toBeLessThan(notesIndex.indexOf("Zulu"));
+  expect(alphaNote).toContain("2026-08-04");
+  expect(alphaNote).toContain("engineering");
+  expect(alphaNote).toContain("运维");
+  expect(alphaNote).toContain('href="/notes/"');
+  expect(alphaNote).not.toContain('href="/tags/"');
 });
 
 test("a Published Note without a valid date prevents publication with its source path", async () => {
@@ -107,7 +131,7 @@ test("a Published Note renders MVP Markdown, safe links, attachments, and a Tabl
 
   expect(guidePage).toContain('<h2 id="overview">Overview</h2>');
   expect(guidePage).toContain('<h2 id="overview-1">Overview</h2>');
-  expect(guidePage).toContain('<nav aria-label="目录">');
+  expect(guidePage).toContain('aria-label="目录"');
   expect(guidePage).toContain('href="#overview-1"');
   expect(guidePage).toContain("<strong>bold</strong>");
   expect(guidePage).toContain("<em>emphasis</em>");
