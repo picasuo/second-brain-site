@@ -1,0 +1,13 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { publishedNotes } from "../../generated/published-notes";
+---
+
+<BaseLayout title="笔记">
+  <h1>笔记</h1>
+  <ul>
+    {publishedNotes.map((note) => (
+      <li><a href={note.noteUrl}>{note.title}</a> <time datetime={note.date}>{note.date}</time></li>
+    ))}
+  </ul>
+</BaseLayout>
