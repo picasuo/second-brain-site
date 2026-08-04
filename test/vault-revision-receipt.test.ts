@@ -32,7 +32,7 @@ test("the repository dispatch workflow uses the pnpm version declared by the pro
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as { packageManager?: string };
 
   expect(packageJson.packageManager).toBe("pnpm@10.24.0");
-  expect(workflow).toContain("uses: pnpm/action-setup@0609f0983b7a228f052f81ef4c3d6510cae254ad");
+  expect(workflow).toContain("uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271");
   expect(workflow).toContain("version: 10.24.0");
   expect(workflow).toContain("cache: pnpm");
   expect(workflow).not.toContain("corepack enable");
