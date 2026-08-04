@@ -1,6 +1,7 @@
 {
   "name": "second-brain-site",
   "private": true,
+  "packageManager": "pnpm@10.24.0",
   "type": "module",
   "scripts": {
     "build": "tsx scripts/build-published-site.ts",

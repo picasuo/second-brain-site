@@ -27,6 +27,17 @@ test("the repository dispatch workflow checks out and builds the supplied Vault 
   expect(workflow).toMatch(/concurrency:\n  group: published-site-build\n  cancel-in-progress: false/);
 });
 
+test("the repository dispatch workflow uses the pnpm version declared by the project", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/publish-vault-revision.yml", import.meta.url), "utf8");
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as { packageManager?: string };
+
+  expect(packageJson.packageManager).toBe("pnpm@10.24.0");
+  expect(workflow).toContain("uses: pnpm/action-setup@0609f0983b7a228f052f81ef4c3d6510cae254ad");
+  expect(workflow).toContain("version: 10.24.0");
+  expect(workflow).toContain("cache: pnpm");
+  expect(workflow).not.toContain("corepack enable");
+});
+
 test("a dispatched Vault Revision is built after the Vault default branch advances", async () => {
   const vaultRepository = await mkdtemp(join(tmpdir(), "second-brain-site-vault-repository-"));
   const checkoutDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-vault-checkout-"));
