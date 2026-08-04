@@ -30,6 +30,12 @@ queued without cancelling an in-progress build. This deliberately serializes
 releases so a future shared deployment target cannot receive mixed Vault
 Revisions.
 
+The Vault-side dispatch template, credential ownership checklist, and the
+re-scan-first Publish Set migration command are documented in
+[docs/vault-publication.md](docs/vault-publication.md). The migration tool refuses
+to write `published: true` until the operator explicitly acknowledges a validated
+dispatch.
+
 Run the build acceptance test and type checker:
 
 ```sh

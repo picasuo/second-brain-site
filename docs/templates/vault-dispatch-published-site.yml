@@ -1,0 +1,33 @@
+name: Dispatch Vault Revision to Published Site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    name: Dispatch immutable Vault Revision
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Dispatch Vault Revision to Site Repository
+        env:
+          SITE_REPOSITORY_DISPATCH_TOKEN: ${{ secrets.SITE_REPOSITORY_DISPATCH_TOKEN }}
+          VAULT_SHA: ${{ github.sha }}
+        run: |
+          if ! [[ "$VAULT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "github.sha must be a full 40-character Git commit SHA." >&2
+            exit 1
+          fi
+          if [[ -z "$SITE_REPOSITORY_DISPATCH_TOKEN" ]]; then
+            echo "SITE_REPOSITORY_DISPATCH_TOKEN is required to dispatch the Vault Revision." >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $SITE_REPOSITORY_DISPATCH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            --url "https://api.github.com/repos/picasuo/second-brain-site/dispatches" \
+            --data '{"event_type":"publish-vault-revision","client_payload":{"vault_sha":"'"$VAULT_SHA"'"}}'
