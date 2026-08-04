@@ -56,6 +56,10 @@ _Avoid_: Obsidian 扩展语法、未声明的渲染特性
 Content Link 中指向 Markdown 标题的片段；使用 Astro 自动生成的标题 ID，重复标题由该规则自动加后缀区分。
 _Avoid_: 自定义锚点体系、手写重复标题 ID
 
+**Table of Contents**:
+Published Note 页面中由二级、三级 Markdown 标题自动生成的页面内导航，并链接至对应 Heading Anchor。
+_Avoid_: 手写目录、独立锚点体系
+
 **Unresolved Content Link**:
 目标 `.md` 文件或目标 Heading Anchor 不存在的 Content Link；构建继续进行并输出可定位该链接来源与目标的诊断提示，最终页面保留其文字但不提供可点击链接。
 _Avoid_: 静默失效链接、构建错误、无上下文的 404
@@ -68,8 +72,16 @@ _Avoid_: 仅文件路径、临时链接
 `/notes/` 页面，主要按 Published Note Order 展示所有 Published Note。
 _Avoid_: Home、标签页
 
+**Home**:
+`/` 页面，以作者的个人介绍为主体，并提供进入 Notes Index 的明确入口；它不承担 Published Note 的列表职责。
+_Avoid_: Notes Index、笔记列表
+
+**Contextual Navigation**:
+MVP 的页面间导航：Home 仅提供进入 Notes Index 的入口；Published Note 页面仅提供返回 Notes Index 的入口；不设置常驻的全局导航。
+_Avoid_: 全局导航栏、站点范围菜单
+
 **Search Index**:
-只包含 Published Note 的标题、正文和 Canonical Tag 的构建期搜索索引；若无法在不引入后端服务的前提下实现，则不在 MVP 提供搜索。
+仅包含 Published Note 的标题、正文和 Canonical Tag 的构建期搜索索引；MVP 不提供搜索，此概念留待后续支持搜索时采用。
 _Avoid_: 私密内容索引、运行时搜索服务
 
 **Note URL Conflict**:
@@ -81,7 +93,7 @@ _Avoid_: 自动消歧、静默覆盖
 _Avoid_: URL 别名、301 重定向
 
 **Published Note Metadata**:
-Published Note 的展示属性：`title` 缺失时回退为文件名；`date` 必填且只接受 `YYYY-MM-DD`，缺失或格式不合法即为构建错误；`tags` 可为空。
+Published Note 的展示属性：`title` 缺失时回退为文件名；`date` 必填且只接受 `YYYY-MM-DD`，缺失或格式不合法即为构建错误；`tags` 可为空，并以 Canonical Tag 显示在 Notes Index 列表项和 Published Note 正文页。
 _Avoid_: 虚构日期、可缺失日期、带时间的日期
 
 **Canonical Tag**:
@@ -89,7 +101,7 @@ _Avoid_: 虚构日期、可缺失日期、带时间的日期
 _Avoid_: 原始标签拼写、大小写敏感标签
 
 **Published Note Order**:
-Published Note 在首页、文档列表和标签页中的排序；先按 `date` 降序，日期相同时按 `title` 的 `zh-CN` 升序比较。
+Published Note 在 Notes Index 中的排序；先按 `date` 降序，日期相同时按 `title` 的 `zh-CN` 升序比较。
 _Avoid_: 文件顺序、标题顺序
 
 **Site Repository**:

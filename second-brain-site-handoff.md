@@ -21,7 +21,13 @@ Do not repeat the decisions already recorded in `CONTEXT.md`.
   - Existing notes use standard Markdown relative `.md` links, same-page anchors, standard image links, and external HTTP(S) links. They do not use Obsidian Wiki links or embeds.
   - Each inspected note has `title`, `date`, and YAML-list `tags`; none currently has `published: true`.
 - When implementing the GitHub Action in the Vault project, batch-add `published: true` to the current 12 operational notes. Re-scan then because the set may have changed; do not make that external write before the Action work.
-- The next unanswered grilling question is: what should the home page `/` primarily show — a personal-site introduction plus recent notes, or an entry point to `/notes/`?
+- The home page `/` has been settled as a personal introduction with a clear entry point to `/notes/`; it is not a notes list.
+- Tag Browsing by Canonical Tag is explicitly deferred beyond the MVP; `/notes/` has no tag-filtering UI or tag-specific routes.
+- Search is explicitly deferred beyond the MVP; `/notes/` is a single list ordered by Published Note Order.
+- Canonical Tag is shown as read-only metadata in Notes Index items and Published Note pages, but does not filter or navigate in the MVP.
+- MVP uses Contextual Navigation only: Home links into `/notes/`, while Published Note pages provide a return to the Notes Index; there is no persistent global navigation.
+- Every Published Note page includes an automatically generated Table of Contents from its level-two and level-three headings, linking to its Heading Anchors.
+- Until the author supplies personal details, Home uses this provisional, easily replaceable copy: “你好，这里是我整理思考与实践的地方。记录工程实践、工具、系统运维与持续学习中的问题、方法和复盘。公开内容均从日常 Obsidian Vault 中挑选、整理后发布。” Its CTA is “浏览笔记” and links to `/notes/`. Do not invent a name, portrait, biography, or external accounts.
 
 ## Known deferred inputs
 
@@ -33,4 +39,3 @@ The user will provide deployment-specific values later: domain, server details, 
 - `obsidian-vault` and `obsidian-markdown`: inspect the source Vault again before implementing the importer or migrating `published: true`.
 - `tdd`: use if the user asks for test-first implementation; otherwise build and verify proportionately.
 - `figma-use-figjam`: use only if the FigJam board needs to be read or changed.
-
