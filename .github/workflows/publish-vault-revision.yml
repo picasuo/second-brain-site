@@ -1,0 +1,72 @@
+name: Publish dispatched Vault Revision
+
+on:
+  repository_dispatch:
+    types: [publish-vault-revision]
+
+# Published Site builds run one at a time and are never cancelled. This keeps a
+# future shared deployment target from receiving files from two Vault Revisions.
+concurrency:
+  group: published-site-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Published Site
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out Site Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Site Repository dependencies
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Validate Vault Revision receipt
+        id: receipt
+        env:
+          VAULT_SHA: ${{ github.event.client_payload.vault_sha }}
+        run: |
+          if ! [[ "$VAULT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "repository_dispatch client_payload.vault_sha must be a full 40-character Git commit SHA." >&2
+            exit 1
+          fi
+          echo "vault_sha=$VAULT_SHA" >> "$GITHUB_OUTPUT"
+          echo "Vault Revision: $VAULT_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check out dispatched Vault Revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.VAULT_REPOSITORY }}
+          ref: ${{ github.event.client_payload.vault_sha }}
+          path: .vault-revision
+          token: ${{ secrets.VAULT_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Confirm checked out Vault Revision
+        env:
+          VAULT_SHA: ${{ github.event.client_payload.vault_sha }}
+        run: |
+          ACTUAL_VAULT_SHA="$(git -C .vault-revision rev-parse HEAD)"
+          test "$ACTUAL_VAULT_SHA" = "$VAULT_SHA"
+          echo "Building Published Site from Vault Revision: $ACTUAL_VAULT_SHA"
+
+      - name: Build Published Site
+        env:
+          VAULT_SHA: ${{ github.event.client_payload.vault_sha }}
+        run: pnpm build -- --vault .vault-revision --out dist --vault-sha "$VAULT_SHA"
+
+      - name: Upload Published Site with Vault Revision receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-site-${{ steps.receipt.outputs.vault_sha }}
+          path: dist
+          if-no-files-found: error

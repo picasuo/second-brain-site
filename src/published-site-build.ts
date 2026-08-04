@@ -12,6 +12,7 @@ const generatedNotesPath = join(projectRoot, "src", "generated", "published-note
 export interface PublishedSiteBuildInput {
   vaultRevisionPath: URL | string;
   outputDirectory: string;
+  vaultSha?: string;
 }
 
 export interface PublishedSiteBuildResult {
@@ -56,10 +57,10 @@ type RenderingContext = {
   vaultRootRealPath: string;
 };
 
-export async function buildPublishedSite({ vaultRevisionPath, outputDirectory }: PublishedSiteBuildInput): Promise<PublishedSiteBuildResult> {
+export async function buildPublishedSite({ vaultRevisionPath, outputDirectory, vaultSha }: PublishedSiteBuildInput): Promise<PublishedSiteBuildResult> {
   const vaultRoot = resolve(toPath(vaultRevisionPath));
   const vaultRootRealPath = await realpath(vaultRoot);
-  const diagnostics: string[] = [];
+  const diagnostics = vaultSha === undefined ? [] : [`Vault Revision: ${vaultSha}`];
   const vaultNotes = await readVaultNotes(vaultRoot);
   const publishedNotes = toPublishedNotes(vaultNotes);
   assertUniqueNoteUrls(publishedNotes);

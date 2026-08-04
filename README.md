@@ -7,6 +7,29 @@ pnpm install
 pnpm build -- --vault path/to/vault-revision --out path/to/site-output
 ```
 
+## Vault Revision dispatch
+
+`.github/workflows/publish-vault-revision.yml` accepts the `publish-vault-revision`
+repository dispatch event with this payload:
+
+```json
+{
+  "vault_sha": "<full-40-character-vault-commit-sha>"
+}
+```
+
+Before enabling the workflow, set the Site Repository GitHub Actions variable
+`VAULT_REPOSITORY` to the Vault's `owner/repository` name and set
+`VAULT_READ_TOKEN` to a token that can read that Vault. The workflow checks out
+the supplied `vault_sha` into `.vault-revision`, verifies the checked-out commit,
+prints the Vault Revision in the run summary and build diagnostics, and names the
+Published Site artifact with that SHA.
+
+All dispatched builds share the `published-site-build` concurrency group and are
+queued without cancelling an in-progress build. This deliberately serializes
+releases so a future shared deployment target cannot receive mixed Vault
+Revisions.
+
 Run the build acceptance test and type checker:
 
 ```sh
