@@ -1,19 +1,19 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "vitest";
 
 import { buildPublishedSite } from "../src/published-site-build.js";
 
-const outputDirectories: string[] = [];
+const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(outputDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+  await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
 
 test("a Vault Revision with one Published Note produces a Notes Index and public note page", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  outputDirectories.push(outputDirectory);
+  temporaryDirectories.push(outputDirectory);
 
   await buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/one-published-note/", import.meta.url),
@@ -31,7 +31,7 @@ test("a Vault Revision with one Published Note produces a Notes Index and public
 
 test("a Publish Set excludes private notes, orders Published Notes, and exposes Canonical Tag", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  outputDirectories.push(outputDirectory);
+  temporaryDirectories.push(outputDirectory);
 
   await buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/publish-set-metadata/", import.meta.url),
@@ -54,7 +54,7 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
 
 test("a Published Note without a valid date prevents publication with its source path", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  outputDirectories.push(outputDirectory);
+  temporaryDirectories.push(outputDirectory);
 
   await expect(buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/missing-date/", import.meta.url),
@@ -64,7 +64,7 @@ test("a Published Note without a valid date prevents publication with its source
 
 test("a Published Note with an invalid date prevents publication with its source path", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  outputDirectories.push(outputDirectory);
+  temporaryDirectories.push(outputDirectory);
 
   await expect(buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/invalid-date/", import.meta.url),
@@ -74,7 +74,7 @@ test("a Published Note with an invalid date prevents publication with its source
 
 test("a Published Note with an invalid slug prevents publication with its source path", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  outputDirectories.push(outputDirectory);
+  temporaryDirectories.push(outputDirectory);
 
   await expect(buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/invalid-slug/", import.meta.url),
@@ -84,10 +84,100 @@ test("a Published Note with an invalid slug prevents publication with its source
 
 test("two Published Notes with the same Note URL prevent publication and identify both sources", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  outputDirectories.push(outputDirectory);
+  temporaryDirectories.push(outputDirectory);
 
   await expect(buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/note-url-conflict/", import.meta.url),
     outputDirectory,
   })).rejects.toThrow("Note URL Conflict: first.md and second.md both resolve to /notes/shared-note/.");
+});
+
+test("a Published Note renders MVP Markdown, safe links, attachments, and a Table of Contents", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  const buildResult = await buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/linked-rendering/", import.meta.url),
+    outputDirectory,
+  });
+
+  const guidePage = await readFile(join(outputDirectory, "notes", "guide", "index.html"), "utf8");
+  const copiedImage = await readFile(join(outputDirectory, "assets", "diagram.svg"), "utf8");
+  const copiedPdf = await readFile(join(outputDirectory, "assets", "guide.pdf"), "utf8");
+
+  expect(guidePage).toContain('<h2 id="overview">Overview</h2>');
+  expect(guidePage).toContain('<h2 id="overview-1">Overview</h2>');
+  expect(guidePage).toContain('<nav aria-label="目录">');
+  expect(guidePage).toContain('href="#overview-1"');
+  expect(guidePage).toContain("<strong>bold</strong>");
+  expect(guidePage).toContain("<em>emphasis</em>");
+  expect(guidePage).toContain("<code>inline code</code>");
+  expect(guidePage).toContain("<ul>");
+  expect(guidePage).toContain("<blockquote>");
+  expect(guidePage).toContain("<hr>");
+  expect(guidePage).toContain("<table>");
+  expect(guidePage).toContain('class="language-ts"');
+  expect(guidePage).toContain('href="/notes/target/#target-heading"');
+  expect(guidePage).toContain('href="/notes/private-reference/"');
+  expect(guidePage).toContain('href="https://example.com"');
+  expect(guidePage).toContain('href="#overview"');
+  expect(guidePage).toContain('<a href="#overview">Same page anchor</a>');
+  expect(guidePage).not.toContain('href="/notes/missing/"');
+  expect(guidePage).toContain("<span>Missing note</span>");
+  expect(guidePage).toContain("<span>Missing target heading</span>");
+  expect(guidePage).toContain('src="/assets/diagram.svg"');
+  expect(guidePage).toContain('href="/assets/guide.pdf"');
+  expect(copiedImage).toContain("fixture-diagram");
+  expect(copiedPdf).toContain("fixture-pdf");
+  expect(buildResult.diagnostics).toContain("Unresolved Content Link in guide.md: missing.md.");
+  expect(buildResult.diagnostics).toContain("Unresolved Content Link in guide.md: target.md#missing-heading.");
+  await expect(readFile(join(outputDirectory, "notes", "private-reference", "index.html"), "utf8")).rejects.toThrow("ENOENT");
+});
+
+test("an unresolved attachment prevents publication with its source and target", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await expect(buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/unresolved-attachment/", import.meta.url),
+    outputDirectory,
+  })).rejects.toThrow("Unresolved Attachment in broken-image.md: assets/missing.svg.");
+});
+
+test("an attachment path that leaves the Vault prevents publication", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await expect(buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/outside-attachment/", import.meta.url),
+    outputDirectory,
+  })).rejects.toThrow("Vault-local Attachment violation in outside.md: ../not-a-vault-attachment.pdf.");
+});
+
+test("an attachment symlink that resolves outside the Vault prevents publication", async () => {
+  const vaultDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-vault-"));
+  const outsideDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-outside-"));
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(vaultDirectory, outsideDirectory, outputDirectory);
+  await mkdir(join(vaultDirectory, "assets"));
+  await writeFile(join(vaultDirectory, "linked.md"), "---\npublished: true\ntitle: Linked\ndate: 2026-08-04\ntags: []\n---\n\n[Outside](assets/outside.pdf)\n");
+  await writeFile(join(outsideDirectory, "outside.pdf"), "%PDF-1.1\nexternal\n");
+  await symlink(join(outsideDirectory, "outside.pdf"), join(vaultDirectory, "assets", "outside.pdf"));
+
+  await expect(buildPublishedSite({ vaultRevisionPath: vaultDirectory, outputDirectory }))
+    .rejects.toThrow("Vault-local Attachment violation in linked.md: assets/outside.pdf.");
+});
+
+test("an unreadable attachment prevents publication", async () => {
+  const vaultDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-vault-"));
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(vaultDirectory, outputDirectory);
+  await mkdir(join(vaultDirectory, "assets"));
+  await writeFile(join(vaultDirectory, "unreadable.md"), "---\npublished: true\ntitle: Unreadable\ndate: 2026-08-04\ntags: []\n---\n\n[Unreadable](assets/private.pdf)\n");
+  const attachmentPath = join(vaultDirectory, "assets", "private.pdf");
+  await writeFile(attachmentPath, "%PDF-1.1\nprivate\n");
+  await chmod(attachmentPath, 0o000);
+
+  await expect(buildPublishedSite({ vaultRevisionPath: vaultDirectory, outputDirectory }))
+    .rejects.toThrow("Unresolved Attachment in unreadable.md: assets/private.pdf.");
 });

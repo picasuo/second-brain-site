@@ -17,6 +17,13 @@ const { note } = Astro.props;
     <p><a href="/notes/">返回笔记</a></p>
     <h1>{note.title}</h1>
     <time datetime={note.date}>{note.date}</time>
+    {note.tableOfContents.length > 0 && (
+      <nav aria-label="目录">
+        <ol>
+          {note.tableOfContents.map((item) => <li class={`depth-${item.depth}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
+        </ol>
+      </nav>
+    )}
     <div set:html={note.renderedContent} />
   </article>
 </BaseLayout>

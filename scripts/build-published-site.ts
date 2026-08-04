@@ -8,7 +8,9 @@ if (vaultFlag !== "--vault" || outputFlag !== "--out" || !vaultRevisionPath || !
   throw new Error("Usage: pnpm build -- --vault <vault-revision-path> --out <output-directory>");
 }
 
-await buildPublishedSite({
+const result = await buildPublishedSite({
   vaultRevisionPath: resolve(vaultRevisionPath),
   outputDirectory: resolve(outputDirectory),
 });
+
+for (const diagnostic of result.diagnostics) console.warn(diagnostic);
