@@ -1,6 +1,6 @@
-# Vault 派发与 Publish Set 迁移
+# Vault 派发工作流
 
-本仓库只保存 Vault 侧工作流模板和迁移工具；不要在 Site Repository 中保存跨仓库令牌。Vault 的实际工作流、密钥和笔记 Frontmatter 均由各自仓库的负责人操作。
+本仓库只保存 Vault 侧工作流模板；不要在 Site Repository 中保存跨仓库令牌。Vault 的实际工作流、密钥和笔记 Frontmatter 均由 Vault 负责人操作。
 
 ## 派发契约
 
@@ -36,27 +36,3 @@
 3. 该 run 成功后才视为派发 Action 已就绪。模板首次产生的空 Publish Set 不会公开未标记的笔记。
 
 GitHub 对 repository dispatch 的细粒度令牌要求目标仓库的 Contents: write；Actions secret 仅能由工作流显式引用。[GitHub REST API 文档](https://docs.github.com/en/rest/repos/repos?apiversion=2022-11-28#create-a-repository-dispatch-event) 与 [Secrets 文档](https://docs.github.com/en/actions/reference/security/secrets) 是权限配置的依据。
-
-## 重新扫描并迁移运营笔记
-
-派发已验证后，在 Vault 的当前 `main` 工作树运行预览：
-
-```sh
-pnpm --dir /path/to/second-brain-site migrate:publish-set -- \
-  --vault /path/to/second-brain \
-  --notes-dir 运维
-```
-
-工具递归重新扫描指定运营目录中的 Markdown 笔记，打印完整候选清单但不修改文件。对当前 Vault，预期候选数是 12；该数字或清单若已变化，应由作者重新确认，而不是沿用旧清单。
-
-确认清单和派发 run 后，显式确认并写入：
-
-```sh
-pnpm --dir /path/to/second-brain-site migrate:publish-set -- \
-  --vault /path/to/second-brain \
-  --notes-dir 运维 \
-  --dispatch-validated \
-  --apply
-```
-
-`--apply` 缺少 `--dispatch-validated` 会失败。写入前，工具会预检全部候选笔记的公开 `slug`；任一 slug 不合规则零写入失败。它只在重新扫描的候选笔记没有 `published` 字段时添加 `published: true`；遇到 `published: false` 或其他既有值会停止，而不会覆盖作者已有的发布意图。提交并推送这次 Vault 迁移后，Vault Action 会派发该迁移提交的 SHA；Site Repository 将只使用这个 Publish Set 构建网站。
