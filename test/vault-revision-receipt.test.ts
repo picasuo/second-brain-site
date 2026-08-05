@@ -25,6 +25,12 @@ test("the repository dispatch workflow checks out and builds the supplied Vault 
   expect(workflow).toContain("path: .vault-revision");
   expect(workflow).toContain("--vault .vault-revision --out dist --vault-sha \"$VAULT_SHA\"");
   expect(workflow).toMatch(/concurrency:\n  group: published-site-build\n  cancel-in-progress: false/);
+  expect(workflow).toContain("uses: actions/configure-pages@v5");
+  expect(workflow).toContain("uses: actions/upload-pages-artifact@v3");
+  expect(workflow).toContain("uses: actions/deploy-pages@v4");
+  expect(workflow).toContain("artifact_name: published-site-${{ needs.build.outputs.vault_sha }}");
+  expect(workflow).toContain("pages: write");
+  expect(workflow).toContain("id-token: write");
 });
 
 test("the repository dispatch workflow uses the pnpm version declared by the project", async () => {

@@ -16,6 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pages: write
+      id-token: write
+    outputs:
+      vault_sha: ${{ steps.receipt.outputs.vault_sha }}
     steps:
       - name: Check out Site Repository
         uses: actions/checkout@v4
@@ -63,14 +67,33 @@ jobs:
           test "$ACTUAL_VAULT_SHA" = "$VAULT_SHA"
           echo "Building Published Site from Vault Revision: $ACTUAL_VAULT_SHA"
 
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
       - name: Build Published Site
         env:
           VAULT_SHA: ${{ github.event.client_payload.vault_sha }}
         run: pnpm build -- --vault .vault-revision --out dist --vault-sha "$VAULT_SHA"
 
-      - name: Upload Published Site with Vault Revision receipt
-        uses: actions/upload-artifact@v4
+      - name: Upload Published Site to GitHub Pages with Vault Revision receipt
+        uses: actions/upload-pages-artifact@v3
         with:
           name: published-site-${{ steps.receipt.outputs.vault_sha }}
           path: dist
-          if-no-files-found: error
+
+  deploy:
+    name: Deploy Published Site
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Published Site to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: published-site-${{ needs.build.outputs.vault_sha }}

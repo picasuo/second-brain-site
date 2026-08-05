@@ -30,6 +30,20 @@ queued without cancelling an in-progress build. This deliberately serializes
 releases so a future shared deployment target cannot receive mixed Vault
 Revisions.
 
+## GitHub Pages deployment
+
+Every successful `publish-vault-revision` dispatch builds the supplied Vault
+Revision, uploads an artifact named `published-site-<vault-sha>`, then deploys
+that exact artifact to GitHub Pages. In the Site Repository's **Settings →
+Pages**, select **GitHub Actions** as the publishing source.
+
+The intended custom domain is `picasuo.qzz.io`. Set that value in the Site
+Repository's **Settings → Pages → Custom domain**, then create a Cloudflare DNS
+`CNAME` record for `picasuo` pointing directly to `picasuo.github.io` (without
+`second-brain-site`). Verify the domain in GitHub before adding the record and
+enable HTTPS after GitHub finishes issuing its certificate. Vault Repository
+settings and secrets remain unrelated to Pages hosting.
+
 The Vault-side dispatch template and credential ownership checklist are documented
 in [docs/vault-publication.md](docs/vault-publication.md).
 
