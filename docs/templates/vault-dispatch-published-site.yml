@@ -2,7 +2,7 @@ name: Dispatch Vault Revision to Published Site
 
 on:
   push:
-    branches: [main]
+    tags: ['*']
   workflow_dispatch:
 
 jobs:

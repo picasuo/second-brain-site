@@ -20,7 +20,8 @@ test("the Vault dispatch template sends the triggering immutable revision to the
   );
 
   expect(workflow).toContain("push:");
-  expect(workflow).toContain("branches: [main]");
+  expect(workflow).toContain("tags: ['*']");
+  expect(workflow).not.toContain("branches:");
   expect(workflow).toContain("workflow_dispatch:");
   expect(workflow).toContain("VAULT_SHA: ${{ github.sha }}");
   expect(workflow).toContain("SITE_REPOSITORY_DISPATCH_TOKEN: ${{ secrets.SITE_REPOSITORY_DISPATCH_TOKEN }}");

@@ -4,7 +4,7 @@
 
 ## 派发契约
 
-将 [Vault 工作流模板](templates/vault-dispatch-published-site.yml) 复制到 Vault 仓库的 `.github/workflows/dispatch-published-site.yml`。它会在 `main` 的每次推送（以及手动触发）中向 `picasuo/second-brain-site` 派发：
+将 [Vault 工作流模板](templates/vault-dispatch-published-site.yml) 复制到 Vault 仓库的 `.github/workflows/dispatch-published-site.yml`。它会在任意 tag 的推送（以及手动触发）中向 `picasuo/second-brain-site` 派发：
 
 ```json
 {
@@ -32,7 +32,7 @@
 核验顺序：
 
 1. 两位负责人确认上述变量、密钥归属和最小权限，且未在仓库或本地配置中泄露值。
-2. 提交模板到 Vault `main`，确认其工作流成功；在 Site Repository 确认收到 `publish-vault-revision`，并检查该 run 的 `Vault Revision`、检出的提交与产物名完全相同。
+2. 提交模板到 Vault 默认分支；再创建并推送一个指向该提交的 tag，确认其工作流成功；在 Site Repository 确认收到 `publish-vault-revision`，并检查该 run 的 `Vault Revision`、检出的提交与产物名完全相同。
 3. 该 run 成功后才视为派发 Action 已就绪。模板首次产生的空 Publish Set 不会公开未标记的笔记。
 
 GitHub 对 repository dispatch 的细粒度令牌要求目标仓库的 Contents: write；Actions secret 仅能由工作流显式引用。[GitHub REST API 文档](https://docs.github.com/en/rest/repos/repos?apiversion=2022-11-28#create-a-repository-dispatch-event) 与 [Secrets 文档](https://docs.github.com/en/actions/reference/security/secrets) 是权限配置的依据。
