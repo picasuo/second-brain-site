@@ -20,6 +20,7 @@ jobs:
       id-token: write
     outputs:
       vault_sha: ${{ steps.receipt.outputs.vault_sha }}
+      contract_version: ${{ steps.receipt.outputs.contract_version }}
     steps:
       - name: Check out Site Repository
         uses: actions/checkout@v4
@@ -42,13 +43,8 @@ jobs:
         id: receipt
         env:
           VAULT_SHA: ${{ github.event.client_payload.vault_sha }}
-        run: |
-          if ! [[ "$VAULT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "repository_dispatch client_payload.vault_sha must be a full 40-character Git commit SHA." >&2
-            exit 1
-          fi
-          echo "vault_sha=$VAULT_SHA" >> "$GITHUB_OUTPUT"
-          echo "Vault Revision: $VAULT_SHA" >> "$GITHUB_STEP_SUMMARY"
+          CONTRACT_VERSION: ${{ github.event.client_payload.contract_version }}
+        run: pnpm tsx scripts/validate-dispatch-receipt.ts
 
       - name: Check out dispatched Vault Revision
         uses: actions/checkout@v4
@@ -74,6 +70,12 @@ jobs:
         env:
           VAULT_SHA: ${{ github.event.client_payload.vault_sha }}
         run: pnpm build -- --vault .vault-revision --out dist --vault-sha "$VAULT_SHA"
+
+      - name: Record Publication Contract receipt in artifact
+        env:
+          VAULT_SHA: ${{ steps.receipt.outputs.vault_sha }}
+          CONTRACT_VERSION: ${{ steps.receipt.outputs.contract_version }}
+        run: pnpm tsx scripts/write-publication-receipt.ts --out dist --vault-sha "$VAULT_SHA" --contract-version "$CONTRACT_VERSION"
 
       - name: Upload Published Site to GitHub Pages with Vault Revision receipt
         uses: actions/upload-pages-artifact@v3

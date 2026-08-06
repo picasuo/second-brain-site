@@ -16,6 +16,7 @@ jobs:
         env:
           SITE_REPOSITORY_DISPATCH_TOKEN: ${{ secrets.SITE_REPOSITORY_DISPATCH_TOKEN }}
           VAULT_SHA: ${{ github.sha }}
+          CONTRACT_VERSION: ${{ vars.PUBLICATION_CONTRACT_VERSION }}
         run: |
           if ! [[ "$VAULT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "github.sha must be a full 40-character Git commit SHA." >&2
@@ -25,9 +26,13 @@ jobs:
             echo "SITE_REPOSITORY_DISPATCH_TOKEN is required to dispatch the Vault Revision." >&2
             exit 1
           fi
+          if [[ -z "$CONTRACT_VERSION" ]]; then
+            echo "PUBLICATION_CONTRACT_VERSION must declare the exact Publication Contract package version." >&2
+            exit 1
+          fi
           curl --fail --silent --show-error --request POST \
             --header "Accept: application/vnd.github+json" \
             --header "Authorization: Bearer $SITE_REPOSITORY_DISPATCH_TOKEN" \
             --header "X-GitHub-Api-Version: 2022-11-28" \
             --url "https://api.github.com/repos/picasuo/second-brain-site/dispatches" \
-            --data '{"event_type":"publish-vault-revision","client_payload":{"vault_sha":"'"$VAULT_SHA"'"}}'
+            --data '{"event_type":"publish-vault-revision","client_payload":{"vault_sha":"'"$VAULT_SHA"'","contract_version":"'"$CONTRACT_VERSION"'"}}'

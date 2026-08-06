@@ -5,6 +5,8 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { afterEach, expect, test } from "vitest";
 
+import { validateDispatchReceipt } from "../src/dispatch-receipt.js";
+import { createPublicationReceipt, writePublicationReceipt } from "../src/publication-receipt.js";
 import { buildPublishedSite } from "../src/published-site-build.js";
 
 const execFileAsync = promisify(execFile);
@@ -20,6 +22,7 @@ test("the repository dispatch workflow checks out and builds the supplied Vault 
   expect(workflow).toContain("repository_dispatch:");
   expect(workflow).toContain("publish-vault-revision");
   expect(workflow).toContain("VAULT_SHA: ${{ github.event.client_payload.vault_sha }}");
+  expect(workflow).toContain("CONTRACT_VERSION: ${{ github.event.client_payload.contract_version }}");
   expect(workflow).toContain("repository: ${{ vars.VAULT_REPOSITORY }}");
   expect(workflow).toContain("ref: ${{ github.event.client_payload.vault_sha }}");
   expect(workflow).toContain("path: .vault-revision");
@@ -29,8 +32,66 @@ test("the repository dispatch workflow checks out and builds the supplied Vault 
   expect(workflow).toContain("uses: actions/upload-pages-artifact@v3");
   expect(workflow).toContain("uses: actions/deploy-pages@v4");
   expect(workflow).toContain("artifact_name: published-site-${{ needs.build.outputs.vault_sha }}");
+  expect(workflow).toContain("scripts/write-publication-receipt.ts");
+  expect(workflow.indexOf("scripts/validate-dispatch-receipt.ts")).toBeLessThan(workflow.indexOf("Check out dispatched Vault Revision"));
   expect(workflow).toContain("pages: write");
   expect(workflow).toContain("id-token: write");
+});
+
+test("a matching dispatch receipt is accepted and records both immutable release values", () => {
+  expect(validateDispatchReceipt({
+    vaultSha: "a".repeat(40),
+    contractVersion: "0.1.0",
+    workspaceContractVersion: "0.1.0",
+  })).toEqual({
+    vaultSha: "a".repeat(40),
+    contractVersion: "0.1.0",
+  });
+});
+
+test("a mismatched dispatch receipt blocks deployment before a Vault Revision is checked out", () => {
+  expect(() => validateDispatchReceipt({
+    vaultSha: "a".repeat(40),
+    contractVersion: "0.0.9",
+    workspaceContractVersion: "0.1.0",
+  })).toThrow("declared contract_version 0.0.9 does not match Site workspace contract version 0.1.0");
+});
+
+test("a dispatch receipt requires a complete Vault SHA and declared contract version", () => {
+  expect(() => validateDispatchReceipt({
+    vaultSha: "a".repeat(39),
+    contractVersion: "0.1.0",
+    workspaceContractVersion: "0.1.0",
+  })).toThrow("vault_sha must be a full 40-character Git commit SHA");
+  expect(() => validateDispatchReceipt({
+    vaultSha: "a".repeat(40),
+    contractVersion: "",
+    workspaceContractVersion: "0.1.0",
+  })).toThrow("contract_version is required");
+});
+
+test("the Pages artifact receipt records both immutable release values", () => {
+  expect(createPublicationReceipt({
+    vaultSha: "a".repeat(40),
+    contractVersion: "0.1.0",
+  })).toEqual({
+    vault_sha: "a".repeat(40),
+    contract_version: "0.1.0",
+  });
+});
+
+test("the artifact receipt writer persists both immutable release values", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-artifact-receipt-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await writePublicationReceipt(outputDirectory, {
+    vaultSha: "a".repeat(40),
+    contractVersion: "0.1.0",
+  });
+
+  await expect(readFile(join(outputDirectory, "publication-receipt.json"), "utf8")).resolves.toBe(
+    '{\n  "vault_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",\n  "contract_version": "0.1.0"\n}\n',
+  );
 });
 
 test("the repository dispatch workflow uses the pnpm version declared by the project", async () => {
@@ -75,7 +136,8 @@ test("a dispatched Vault Revision is built after the Vault default branch advanc
   expect(notePage).toContain("Dispatched Vault Revision");
   expect(notePage).not.toContain("Advanced default branch");
   expect(result.diagnostics).toContain(`Vault Revision: ${vaultSha}`);
-});
+  expect(result.diagnostics).toContain("Publication Contract Version: 0.1.0");
+}, 10_000);
 
 function publishedNote(body: string): string {
   return `---\npublished: true\nslug: release\ntitle: Revision Receipt\ndate: 2026-08-04\ntags: []\n---\n\n${body}\n`;

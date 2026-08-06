@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  publicationContractVersion,
   validatePublicationContract,
   type PublicationContractContentLink,
   type PublicationContractNote,
@@ -68,6 +69,7 @@ export async function buildPublishedSite({ vaultRevisionPath, outputDirectory, v
   if (contract.blockingErrors.length > 0) throw new Error(contract.blockingErrors.map((error) => error.message).join("\n"));
   const diagnostics = [
     ...(vaultSha === undefined ? [] : [`Vault Revision: ${vaultSha}`]),
+    `Publication Contract Version: ${publicationContractVersion}`,
     ...contract.diagnostics.map((diagnostic) => diagnostic.message),
   ];
   const vaultNotes = toVaultNotes(contract.notes);

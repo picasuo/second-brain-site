@@ -10,12 +10,13 @@
 {
   "event_type": "publish-vault-revision",
   "client_payload": {
-    "vault_sha": "<触发该工作流的完整 40 位提交 SHA>"
+    "vault_sha": "<触发该工作流的完整 40 位提交 SHA>",
+    "contract_version": "<已固定的 Publication Contract 包版本>"
   }
 }
 ```
 
-这里的 `vault_sha` 直接来自 `github.sha`，不是默认分支随后移动时的 HEAD。Site Repository 已通过该 SHA 检出 Vault Revision、验证实际检出值，并在产物名称和构建诊断中记录它。
+这里的 `vault_sha` 直接来自 `github.sha`，不是默认分支随后移动时的 HEAD。将 Vault 的 Actions variable `PUBLICATION_CONTRACT_VERSION` 设为 Release Preflight 所固定的精确 npm 包版本（不使用范围）。Site Repository 会先拒绝缺失、不完整或版本不匹配的回执，之后才检出 Vault Revision；成功产物中的 `publication-receipt.json`、构建诊断和 job summary 都记录这两个值。
 
 ## 权限与负责人核验
 
@@ -26,6 +27,7 @@
 | Site Repository | Actions variable `VAULT_REPOSITORY=picasuo/second-brain` | Site Repository 管理员 | 无敏感值 |
 | Site Repository | Actions secret `VAULT_READ_TOKEN` | Vault Repository 管理员或指定凭据管理员 | 仅 `picasuo/second-brain` 的 Contents: read |
 | Vault Repository | Actions secret `SITE_REPOSITORY_DISPATCH_TOKEN` | Site Repository 管理员或指定凭据管理员 | 仅 `picasuo/second-brain-site` 的 Contents: write |
+| Vault Repository | Actions variable `PUBLICATION_CONTRACT_VERSION=<exact-version>` | Vault Repository 管理员 | 与 Release Preflight 固定依赖一致 |
 
 `SITE_REPOSITORY_DISPATCH_TOKEN` 不能用 Vault 自身的 `GITHUB_TOKEN` 替代；它必须是有权对目标 Site Repository 创建 repository dispatch 的细粒度 PAT 或 GitHub App token。令牌只存入 Vault 的 Actions secret，模板通过环境变量交给 `curl`，绝不写入 Git、日志或命令输出。
 
