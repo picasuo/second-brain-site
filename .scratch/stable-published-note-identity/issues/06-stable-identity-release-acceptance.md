@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 04, 05
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] The Vault preflight and Site receipt report the same contract version and Vault SHA.
 - [x] A matching release deploys the intended Published Notes and their Published Attachments.

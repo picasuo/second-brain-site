@@ -4,7 +4,7 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] The Vault author confirms every current Published Note and its stable slug.
 - [x] The Oracle multi-node note receives a persistent slug before the next release tag.

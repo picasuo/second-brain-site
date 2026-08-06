@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] The workspace contains a separately versioned public package with build, typecheck and test entry points.
 - [x] The package exposes Publication Contract validation and proposal types without Astro, GitHub Actions, credentials or write operations.

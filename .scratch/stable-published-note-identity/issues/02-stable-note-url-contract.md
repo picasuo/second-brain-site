@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] A Published Note without a slug fails with a source-located diagnostic.
 - [x] Existing valid slugs resolve to stable `/notes/<slug>/` URLs and duplicate URLs fail.

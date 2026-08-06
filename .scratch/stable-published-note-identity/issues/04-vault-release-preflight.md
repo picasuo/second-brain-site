@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] The default release preflight is read-only and presents source-located blocking errors and non-blocking diagnostics.
 - [x] The Vault pins an exact npm package version and exposes it as `contract_version` when dispatching a release.

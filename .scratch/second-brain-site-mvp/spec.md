@@ -1,6 +1,8 @@
 # Second Brain Site MVP
 
-Status: ready-for-agent
+Status: resolved
+
+> **Partially superseded:** the Note URL fallback and publication-validation decisions in this MVP are superseded by [Stable Published Note Identity and Release Preflight](../stable-published-note-identity/spec.md). Published Notes now require persistent slugs; Vault paths no longer provide a URL fallback.
 
 ## Problem Statement
 

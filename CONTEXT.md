@@ -41,7 +41,7 @@ Published Note 中指向 Vault 外 HTTP(S) 地址的标准 Markdown 链接；原
 _Avoid_: 已验证的外部链接、构建依赖
 
 **Unpublished Link**:
-Published Note 中保留的、指向未进入 Publish Set 的笔记的链接；构建时仍按目标笔记的 Note URL 转换，其目标在 Published Site 上返回 404。
+Published Note 中保留的、指向未进入 Publish Set 且具有 Stable Note Slug 的笔记的链接；构建时仍按目标笔记的 Note URL 转换，其目标在 Published Site 上返回 404。
 _Avoid_: 已移除链接、私密笔记页面
 
 **Content Link**:
@@ -65,8 +65,20 @@ _Avoid_: 手写目录、独立锚点体系
 _Avoid_: 静默失效链接、构建错误、无上下文的 404
 
 **Note URL**:
-从 Vault 笔记推导出的、位于 `/notes/` 下的站点地址；优先由其 Frontmatter 的单层小写字母、数字和连字符组成的 `slug` 决定，未设置时才由 Vault 文件路径推导；不合规的 `slug` 是构建错误。笔记公开时该地址有页面，未公开时该地址返回 404。
-_Avoid_: 仅文件路径、临时链接
+由 Stable Note Slug 推导出的、位于 `/notes/` 下的站点地址。不再由 Vault 文件路径推导；Published Note 缺少合法 Stable Note Slug 是构建错误。未公开但具有 Stable Note Slug 的笔记保留该地址，并在 Published Site 上返回 404。
+_Avoid_: 文件路径 URL、临时链接
+
+**Stable Note Slug**:
+Vault Note Frontmatter 中持久保存的合法 `slug`。每篇 Published Note 必须有一个，且作者不应因改名或移动笔记而改变它。Vault 的显式修复流程可仅为缺失值生成一次 `n-<lowercase-uuid>`；它不会改写既有值。
+_Avoid_: 每次构建生成的 ID、由文件路径派生的 ID
+
+**Publication Contract**:
+定义 Publish Set、Published Note Metadata、Note URL、附件与 Content Link 行为的无写入校验规则及其版本。Vault Release Preflight 与 Site Repository 对同一个 Vault Revision 必须使用相同版本。
+_Avoid_: 两套独立的发布校验、仅供作者参考的检查
+
+**Release Preflight**:
+在 Vault 创建 release tag 前运行的 Publication Contract 校验。默认只报告诊断；仅在作者显式请求时，Vault 侧可为缺失的 Stable Note Slug 写入建议值，随后必须重新校验、审阅并提交。
+_Avoid_: 静默改写、Site Repository 对 Vault 的写入
 
 **Notes Index**:
 `/notes/` 页面，主要按 Published Note Order 展示所有 Published Note。
@@ -89,7 +101,7 @@ _Avoid_: 私密内容索引、运行时搜索服务
 _Avoid_: 自动消歧、静默覆盖
 
 **Retired Note URL**:
-因 Published Note 更改 `slug` 或 Vault 文件路径而不再使用的 Note URL；其目标直接返回 404，不维护重定向或别名。
+因 Published Note 更改 `slug` 而不再使用的 Note URL；其目标直接返回 404，不维护重定向或别名。
 _Avoid_: URL 别名、301 重定向
 
 **Published Note Metadata**:

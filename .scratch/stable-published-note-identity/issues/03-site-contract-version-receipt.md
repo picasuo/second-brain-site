@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [x] The Site build uses the Publication Contract rather than a duplicate rule implementation.
 - [x] A dispatch requires a complete Vault SHA and a declared contract version.
