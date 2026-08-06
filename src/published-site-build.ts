@@ -1,10 +1,14 @@
-import { copyFile, mkdir, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  validatePublicationContract,
+  type PublicationContractContentLink,
+  type PublicationContractNote,
+} from "@picasuo/publish-set-contract";
 import GithubSlugger from "github-slugger";
 import MarkdownIt from "markdown-it";
-import { parse } from "yaml";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const generatedNotesPath = join(projectRoot, "src", "generated", "published-notes.ts");
@@ -30,7 +34,7 @@ type VaultNote = {
   body: string;
   frontmatter: Record<string, unknown>;
   headingIds: Set<string>;
-  noteUrl: string;
+  noteUrl?: string;
   sourcePath: string;
 };
 
@@ -51,8 +55,8 @@ type Attachment = {
 
 type RenderingContext = {
   attachments: Map<string, Attachment>;
+  contentLinksBySourceAndHref: Map<string, PublicationContractContentLink>;
   diagnostics: string[];
-  noteByAbsolutePath: Map<string, VaultNote>;
   vaultRoot: string;
   vaultRootRealPath: string;
 };
@@ -60,16 +64,20 @@ type RenderingContext = {
 export async function buildPublishedSite({ vaultRevisionPath, outputDirectory, vaultSha }: PublishedSiteBuildInput): Promise<PublishedSiteBuildResult> {
   const vaultRoot = resolve(toPath(vaultRevisionPath));
   const vaultRootRealPath = await realpath(vaultRoot);
-  const diagnostics = vaultSha === undefined ? [] : [`Vault Revision: ${vaultSha}`];
-  const vaultNotes = await readVaultNotes(vaultRoot);
+  const contract = await validatePublicationContract({ vaultRoot });
+  if (contract.blockingErrors.length > 0) throw new Error(contract.blockingErrors.map((error) => error.message).join("\n"));
+  const diagnostics = [
+    ...(vaultSha === undefined ? [] : [`Vault Revision: ${vaultSha}`]),
+    ...contract.diagnostics.map((diagnostic) => diagnostic.message),
+  ];
+  const vaultNotes = toVaultNotes(contract.notes);
   const publishedNotes = toPublishedNotes(vaultNotes);
-  assertUniqueNoteUrls(publishedNotes);
   publishedNotes.sort((left, right) => right.date.localeCompare(left.date) || left.title.localeCompare(right.title, "zh-CN"));
 
   const renderingContext: RenderingContext = {
     attachments: new Map(),
+    contentLinksBySourceAndHref: new Map(contract.contentLinks.map((link) => [contentLinkKey(link), link])),
     diagnostics,
-    noteByAbsolutePath: new Map(vaultNotes.map((note) => [note.absolutePath, note])),
     vaultRoot,
     vaultRootRealPath,
   };
@@ -97,29 +105,17 @@ function toPath(vaultRevisionPath: URL | string): string {
   return vaultRevisionPath instanceof URL ? fileURLToPath(vaultRevisionPath) : vaultRevisionPath;
 }
 
-async function readVaultNotes(vaultRoot: string): Promise<VaultNote[]> {
-  const notePaths = await markdownFilesIn(vaultRoot);
-  return Promise.all(notePaths.map(async (absolutePath) => {
-    const source = await readFile(absolutePath, "utf8");
-    const { frontmatter, body } = parseFrontmatter(source, absolutePath);
-    const sourcePath = relative(vaultRoot, absolutePath).replaceAll("\\", "/");
-    return {
-      absolutePath,
-      body,
-      frontmatter,
-      headingIds: headingIdsFor(body),
-      noteUrl: noteUrlFor(frontmatter.slug, sourcePath, frontmatter.published === true),
-      sourcePath,
-    };
-  }));
+function toVaultNotes(contractNotes: PublicationContractNote[]): VaultNote[] {
+  return contractNotes.map((note) => ({ ...note, headingIds: headingIdsFor(note.body) }));
 }
 
 function toPublishedNotes(vaultNotes: VaultNote[]): PublishedNote[] {
   return vaultNotes.flatMap((note) => {
     if (note.frontmatter.published !== true) return [];
+    if (!note.noteUrl) return [];
     return [{
       ...note,
-      date: validDate(note.frontmatter.date, note.sourcePath),
+      date: note.frontmatter.date as string,
       renderedContent: "",
       tableOfContents: [],
       tags: canonicalTags(note.frontmatter.tags, note.sourcePath),
@@ -128,40 +124,8 @@ function toPublishedNotes(vaultNotes: VaultNote[]): PublishedNote[] {
   });
 }
 
-async function markdownFilesIn(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const paths = await Promise.all(entries.map(async (entry) => {
-    const entryPath = join(directory, entry.name);
-    if (entry.isDirectory()) return markdownFilesIn(entryPath);
-    return entry.isFile() && extname(entry.name) === ".md" ? [entryPath] : [];
-  }));
-  return paths.flat().sort((left, right) => left.localeCompare(right, "en"));
-}
-
-function parseFrontmatter(source: string, notePath: string): { frontmatter: Record<string, unknown>; body: string } {
-  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
-  if (!match) return { frontmatter: {}, body: source };
-  const frontmatter = parse(match[1]);
-  if (frontmatter === null || typeof frontmatter !== "object" || Array.isArray(frontmatter)) {
-    throw new Error(`Invalid Frontmatter in Published Note ${notePath}.`);
-  }
-  return { frontmatter: frontmatter as Record<string, unknown>, body: match[2] };
-}
-
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() !== "" ? value : undefined;
-}
-
-function validDate(value: unknown, sourcePath: string): string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new Error(`Published Note ${sourcePath} requires a valid date in YYYY-MM-DD format.`);
-  }
-  const [year, month, day] = value.split("-").map(Number);
-  const candidate = new Date(Date.UTC(year, month - 1, day));
-  if (candidate.getUTCFullYear() !== year || candidate.getUTCMonth() !== month - 1 || candidate.getUTCDate() !== day) {
-    throw new Error(`Published Note ${sourcePath} requires a valid date in YYYY-MM-DD format.`);
-  }
-  return value;
 }
 
 function canonicalTags(value: unknown, sourcePath: string): string[] {
@@ -175,32 +139,6 @@ function canonicalTags(value: unknown, sourcePath: string): string[] {
     if (canonical) tags.set(canonical, canonical);
   }
   return [...tags.values()];
-}
-
-function noteUrlFor(slug: unknown, sourcePath: string, validateSlug: boolean): string {
-  if (slug === undefined || (!validateSlug && (typeof slug !== "string" || !validSlug(slug)))) {
-    const pathWithoutExtension = sourcePath.replace(/\.md$/, "");
-    return `/notes/${pathWithoutExtension.split("/").map(encodeURIComponent).join("/")}/`;
-  }
-  if (typeof slug !== "string" || !validSlug(slug)) {
-    throw new Error(`Published Note ${sourcePath} has an invalid slug: ${String(slug)}.`);
-  }
-  return `/notes/${slug}/`;
-}
-
-function validSlug(slug: string): boolean {
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
-}
-
-function assertUniqueNoteUrls(notes: PublishedNote[]): void {
-  const notesByUrl = new Map<string, PublishedNote>();
-  for (const note of notes) {
-    const existing = notesByUrl.get(note.noteUrl);
-    if (existing) {
-      throw new Error(`Note URL Conflict: ${existing.sourcePath} and ${note.sourcePath} both resolve to ${note.noteUrl}.`);
-    }
-    notesByUrl.set(note.noteUrl, note);
-  }
 }
 
 function createMarkdownRenderer(): MarkdownIt {
@@ -260,13 +198,15 @@ async function transformInlineTokens(tokens: NonNullable<ReturnType<MarkdownIt["
     const token = tokens[index];
     if (token.type === "link_open") {
       const href = token.attrGet("href") ?? "";
-      const result = await resolveLink(href, note, context);
-      if (result.kind === "unresolved") {
+      const contractLink = context.contentLinksBySourceAndHref.get(contentLinkKey({ href, sourcePath: note.sourcePath }));
+      if (contractLink?.kind === "unresolved") {
         token.meta = { unresolved: true };
         const closingIndex = tokens.findIndex((candidate, candidateIndex) => candidateIndex > index && candidate.type === "link_close");
         if (closingIndex !== -1) tokens[closingIndex].meta = { unresolved: true };
+      } else if (contractLink?.kind === "resolved") {
+        token.attrSet("href", contractLink.resolvedHref ?? href);
       } else {
-        token.attrSet("href", result.href);
+        token.attrSet("href", await resolveAttachmentUrl(href, note, context));
       }
     }
     if (token.type === "image") {
@@ -274,25 +214,6 @@ async function transformInlineTokens(tokens: NonNullable<ReturnType<MarkdownIt["
       token.attrSet("src", await resolveAttachmentUrl(source, note, context));
     }
   }
-}
-
-async function resolveLink(href: string, note: PublishedNote, context: RenderingContext): Promise<{ href: string; kind: "resolved" } | { kind: "unresolved" }> {
-  if (isExternalOrAbsoluteUrl(href)) return { href, kind: "resolved" };
-  const { anchor, path } = splitHref(href);
-  if (path === "") {
-    if (anchor === "" || note.headingIds.has(decodePath(anchor))) return { href, kind: "resolved" };
-    context.diagnostics.push(`Unresolved Content Link in ${note.sourcePath}: ${href}.`);
-    return { kind: "unresolved" };
-  }
-  if (path.toLowerCase().endsWith(".md")) {
-    const target = context.noteByAbsolutePath.get(resolve(dirname(note.absolutePath), decodePath(path)));
-    if (!target || (anchor !== "" && !target.headingIds.has(decodePath(anchor)))) {
-      context.diagnostics.push(`Unresolved Content Link in ${note.sourcePath}: ${href}.`);
-      return { kind: "unresolved" };
-    }
-    return { href: `${target.noteUrl}${anchor === "" ? "" : `#${anchor}`}`, kind: "resolved" };
-  }
-  return { href: await resolveAttachmentUrl(href, note, context), kind: "resolved" };
 }
 
 async function resolveAttachmentUrl(href: string, note: PublishedNote, context: RenderingContext): Promise<string> {
@@ -322,6 +243,10 @@ async function resolveAttachmentUrl(href: string, note: PublishedNote, context: 
   context.attachments.set(normalizedOutputPath, { outputRelativePath: normalizedOutputPath, resolvedPath, sourcePath: note.sourcePath, target: href });
   const attachmentUrl = `/${normalizedOutputPath.split("/").map(encodeURIComponent).join("/")}`;
   return `${attachmentUrl}${anchor === "" ? "" : `#${anchor}`}`;
+}
+
+function contentLinkKey(link: Pick<PublicationContractContentLink, "href" | "sourcePath">): string {
+  return `${link.sourcePath}\u0000${link.href}`;
 }
 
 function isExternalOrAbsoluteUrl(href: string): boolean {

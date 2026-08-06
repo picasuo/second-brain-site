@@ -18,6 +18,8 @@
     "typecheck": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
+    "github-slugger": "^2.0.0",
+    "markdown-it": "^14.0.0",
     "yaml": "^2.0.0"
   },
   "publishConfig": {

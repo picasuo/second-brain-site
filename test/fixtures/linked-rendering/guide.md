@@ -1,5 +1,6 @@
 ---
 published: true
+slug: guide
 title: Guide
 date: 2026-08-04
 tags: []
@@ -26,7 +27,7 @@ This paragraph has **bold**, *emphasis*, and `inline code`.
 const answer = 42;
 ```
 
-[Published target](target.md#target-heading), [private target](private.md), [external](https://example.com), [Missing note](missing.md), and [Missing target heading](target.md#missing-heading).
+[Published target](target.md#target-heading), [private target](private.md), [external](https://example.com), [Missing note](missing.md), [Missing target heading](target.md#missing-heading), and [No slug target](no-slug.md).
 
 [Same page anchor](#overview)
 

@@ -1,5 +1,6 @@
 ---
 published: true
+slug: first-published-note
 title: First Published Note
 date: 2026-08-04
 ---

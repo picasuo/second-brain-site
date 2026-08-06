@@ -78,7 +78,7 @@ test("a dispatched Vault Revision is built after the Vault default branch advanc
 });
 
 function publishedNote(body: string): string {
-  return `---\npublished: true\ntitle: Revision Receipt\ndate: 2026-08-04\ntags: []\n---\n\n${body}\n`;
+  return `---\npublished: true\nslug: release\ntitle: Revision Receipt\ndate: 2026-08-04\ntags: []\n---\n\n${body}\n`;
 }
 
 async function git(cwd: string, ...arguments_: string[]): Promise<string> {

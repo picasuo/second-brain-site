@@ -1,5 +1,6 @@
 ---
 published: true
+slug: missing-date
 title: Missing Date
 tags: []
 ---

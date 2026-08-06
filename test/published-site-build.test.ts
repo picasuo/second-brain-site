@@ -106,6 +106,32 @@ test("a Published Note with an invalid slug prevents publication with its source
   })).rejects.toThrow("Published Note invalid-slug.md has an invalid slug: Invalid_Slug.");
 });
 
+test("a Published Note without a Stable Note Slug prevents a Chinese or space-containing source path from becoming an Astro route", async () => {
+  const vaultDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-vault-"));
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(vaultDirectory, outputDirectory);
+  await mkdir(join(vaultDirectory, "中文 笔记"));
+  await writeFile(join(vaultDirectory, "中文 笔记", "没有 Slug.md"), "---\npublished: true\ntitle: Missing Slug\ndate: 2026-08-04\ntags: []\n---\n");
+
+  await expect(buildPublishedSite({ vaultRevisionPath: vaultDirectory, outputDirectory }))
+    .rejects.toThrow("Published Note 中文 笔记/没有 Slug.md requires a Stable Note Slug.");
+});
+
+test("a Stable Note Slug keeps Chinese and space-containing source paths out of Astro routes", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/stable-slug-non-ascii/", import.meta.url),
+    outputDirectory,
+  });
+
+  const notePage = await readFile(join(outputDirectory, "notes", "stable-note-url", "index.html"), "utf8");
+
+  expect(notePage).toContain("This path must not become part of the Note URL.");
+  await expect(readFile(join(outputDirectory, "notes", "中文 笔记", "稳定 URL", "index.html"), "utf8")).rejects.toThrow("ENOENT");
+});
+
 test("two Published Notes with the same Note URL prevent publication and identify both sources", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);
@@ -149,12 +175,16 @@ test("a Published Note renders MVP Markdown, safe links, attachments, and a Tabl
   expect(guidePage).not.toContain('href="/notes/missing/"');
   expect(guidePage).toContain("<span>Missing note</span>");
   expect(guidePage).toContain("<span>Missing target heading</span>");
+  expect(guidePage).toContain("<span>No slug target</span>");
+  expect(guidePage).not.toContain('href="undefined"');
   expect(guidePage).toContain('src="/assets/diagram.svg"');
   expect(guidePage).toContain('href="/assets/guide.pdf"');
   expect(copiedImage).toContain("fixture-diagram");
   expect(copiedPdf).toContain("fixture-pdf");
   expect(buildResult.diagnostics).toContain("Unresolved Content Link in guide.md: missing.md.");
   expect(buildResult.diagnostics).toContain("Unresolved Content Link in guide.md: target.md#missing-heading.");
+  expect(buildResult.diagnostics).toContain("Unresolved Content Link in guide.md: target note does not have a Stable Note Slug.");
+  expect(buildResult.diagnostics.join("\n")).not.toContain("no-slug.md");
   await expect(readFile(join(outputDirectory, "notes", "private-reference", "index.html"), "utf8")).rejects.toThrow("ENOENT");
 });
 
@@ -184,7 +214,7 @@ test("an attachment symlink that resolves outside the Vault prevents publication
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(vaultDirectory, outsideDirectory, outputDirectory);
   await mkdir(join(vaultDirectory, "assets"));
-  await writeFile(join(vaultDirectory, "linked.md"), "---\npublished: true\ntitle: Linked\ndate: 2026-08-04\ntags: []\n---\n\n[Outside](assets/outside.pdf)\n");
+  await writeFile(join(vaultDirectory, "linked.md"), "---\npublished: true\nslug: linked\ntitle: Linked\ndate: 2026-08-04\ntags: []\n---\n\n[Outside](assets/outside.pdf)\n");
   await writeFile(join(outsideDirectory, "outside.pdf"), "%PDF-1.1\nexternal\n");
   await symlink(join(outsideDirectory, "outside.pdf"), join(vaultDirectory, "assets", "outside.pdf"));
 
@@ -197,7 +227,7 @@ test("an unreadable attachment prevents publication", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(vaultDirectory, outputDirectory);
   await mkdir(join(vaultDirectory, "assets"));
-  await writeFile(join(vaultDirectory, "unreadable.md"), "---\npublished: true\ntitle: Unreadable\ndate: 2026-08-04\ntags: []\n---\n\n[Unreadable](assets/private.pdf)\n");
+  await writeFile(join(vaultDirectory, "unreadable.md"), "---\npublished: true\nslug: unreadable\ntitle: Unreadable\ndate: 2026-08-04\ntags: []\n---\n\n[Unreadable](assets/private.pdf)\n");
   const attachmentPath = join(vaultDirectory, "assets", "private.pdf");
   await writeFile(attachmentPath, "%PDF-1.1\nprivate\n");
   await chmod(attachmentPath, 0o000);
