@@ -1,0 +1,26 @@
+{
+  "name": "@picasuo/publish-set-contract",
+  "version": "0.1.0",
+  "description": "Side-effect-free validation for a Second Brain Site Publish Set.",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "yaml": "^2.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

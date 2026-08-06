@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@picasuo/publish-set-contract':
+        specifier: workspace:*
+        version: link:packages/publish-set-contract
       github-slugger:
         specifier: ^2.0.0
         version: 2.0.0
@@ -39,6 +42,12 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.7(@types/debug@4.1.13)(@types/node@22.20.1)(tsx@4.23.5)(yaml@2.9.0)
+
+  packages/publish-set-contract:
+    dependencies:
+      yaml:
+        specifier: ^2.0.0
+        version: 2.9.0
 
 packages:
 

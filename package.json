@@ -4,8 +4,8 @@
   "packageManager": "pnpm@10.24.0",
   "type": "module",
   "scripts": {
-    "build": "tsx scripts/build-published-site.ts",
-    "test": "vitest run",
+    "build": "pnpm --filter @picasuo/publish-set-contract build && tsx scripts/build-published-site.ts",
+    "test": "pnpm --filter @picasuo/publish-set-contract build && vitest run",
     "test:watch": "vitest",
     "typecheck": "ASTRO_TELEMETRY_DISABLED=1 astro check"
   },
@@ -19,6 +19,7 @@
     "vitest": "^3.0.0"
   },
   "dependencies": {
+    "@picasuo/publish-set-contract": "workspace:*",
     "github-slugger": "^2.0.0",
     "markdown-it": "^14.0.0",
     "yaml": "^2.0.0"
