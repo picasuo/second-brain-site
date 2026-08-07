@@ -4,9 +4,7 @@
 
 **Blocked by:** 01 — 初始化 Contract Repository 并发布 v0.2.1.
 
-**Status:** ready-for-agent
-
-- **Completion:** completed
+**Status:** completed
 
 - [x] Vault 的 Release Preflight 与冻结锁文件精确采用 `@picasuo/publish-set-contract@0.2.1`，不使用版本范围或 latest；派发的 `contract_version` 取自 CI 已安装包导出的版本。
 - [x] 只有版本化 `vX.Y.Z` Vault Release Tag 触发派发；它携带触发 tag 所指向的完整 Vault SHA 和 `contract_version: 0.2.1`。

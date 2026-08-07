@@ -1,6 +1,6 @@
 # 04 — 验收 v0.2.1 Vault Release
 
-**What to build:** 使用作者确认的 Vault Revision 运行 `0.2.1` Release Preflight、推送专用 Vault Release Tag，并完整验证从 repository dispatch 到 Published Site 部署的可观察发布行为。
+**What to build:** 使用作者确认的 Vault Revision 运行 `0.2.1` Release Preflight、推送版本化 Vault Release Tag，并完整验证从 repository dispatch 到 Published Site 部署的可观察发布行为。
 
 **Blocked by:** 02 — Site 使用精确的 Contract v0.2.1; 03 — Vault 升级 Preflight 与 Release Tag.
 
