@@ -2,8 +2,7 @@ name: Dispatch Vault Revision to Published Site
 
 on:
   push:
-    tags: ['*']
-  workflow_dispatch:
+    tags: ['vault-release-*']
 
 jobs:
   dispatch:
@@ -12,11 +11,24 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Check out the tagged Vault Revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Release Preflight
+        run: |
+          npm ci --ignore-scripts
+          npm run release:preflight
       - name: Dispatch Vault Revision to Site Repository
         env:
           SITE_REPOSITORY_DISPATCH_TOKEN: ${{ secrets.SITE_REPOSITORY_DISPATCH_TOKEN }}
           VAULT_SHA: ${{ github.sha }}
           CONTRACT_VERSION: ${{ vars.PUBLICATION_CONTRACT_VERSION }}
+          EXPECTED_CONTRACT_VERSION: "0.2.1"
         run: |
           if ! [[ "$VAULT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "github.sha must be a full 40-character Git commit SHA." >&2
@@ -26,8 +38,8 @@ jobs:
             echo "SITE_REPOSITORY_DISPATCH_TOKEN is required to dispatch the Vault Revision." >&2
             exit 1
           fi
-          if [[ -z "$CONTRACT_VERSION" ]]; then
-            echo "PUBLICATION_CONTRACT_VERSION must declare the exact Publication Contract package version." >&2
+          if [[ "$CONTRACT_VERSION" != "$EXPECTED_CONTRACT_VERSION" ]]; then
+            echo "PUBLICATION_CONTRACT_VERSION must be exactly $EXPECTED_CONTRACT_VERSION." >&2
             exit 1
           fi
           curl --fail --silent --show-error --request POST \

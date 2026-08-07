@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "release:preflight": "node scripts/release-preflight.mjs"
+  },
+  "devDependencies": {
+    "@picasuo/publish-set-contract": "0.2.1"
+  }
+}
