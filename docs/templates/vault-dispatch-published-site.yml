@@ -2,7 +2,7 @@ name: Dispatch Vault Revision to Published Site
 
 on:
   push:
-    tags: ['vault-release-*']
+    tags: ['v*']
 
 jobs:
   dispatch:
@@ -15,20 +15,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          version: 10.24.0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
       - name: Run Release Preflight
         run: |
-          npm ci --ignore-scripts
-          npm run release:preflight
+          pnpm install --frozen-lockfile
+          pnpm run release:preflight
+      - name: Read installed Publication Contract version
+        id: contract
+        run: |
+          contract_version="$(node --input-type=module --eval 'import { publicationContractVersion } from "@picasuo/publish-set-contract"; console.log(publicationContractVersion)')"
+          echo "contract_version=$contract_version" >> "$GITHUB_OUTPUT"
       - name: Dispatch Vault Revision to Site Repository
         env:
           SITE_REPOSITORY_DISPATCH_TOKEN: ${{ secrets.SITE_REPOSITORY_DISPATCH_TOKEN }}
           VAULT_SHA: ${{ github.sha }}
-          CONTRACT_VERSION: ${{ vars.PUBLICATION_CONTRACT_VERSION }}
-          EXPECTED_CONTRACT_VERSION: "0.2.1"
+          CONTRACT_VERSION: ${{ steps.contract.outputs.contract_version }}
         run: |
           if ! [[ "$VAULT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "github.sha must be a full 40-character Git commit SHA." >&2
@@ -38,8 +47,8 @@ jobs:
             echo "SITE_REPOSITORY_DISPATCH_TOKEN is required to dispatch the Vault Revision." >&2
             exit 1
           fi
-          if [[ "$CONTRACT_VERSION" != "$EXPECTED_CONTRACT_VERSION" ]]; then
-            echo "PUBLICATION_CONTRACT_VERSION must be exactly $EXPECTED_CONTRACT_VERSION." >&2
+          if [[ ! "$CONTRACT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Installed Publication Contract must report an exact X.Y.Z version." >&2
             exit 1
           fi
           curl --fail --silent --show-error --request POST \

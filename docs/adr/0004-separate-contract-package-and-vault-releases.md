@@ -6,7 +6,7 @@ Status: accepted
 
 `@picasuo/publish-set-contract` 由独立的 Contract Repository 拥有源码、版本、Git tag 与 npm 发布职责。每个 Contract Package Release 都从该仓库经过验证的提交发布为不可变的精确版本；Site Repository 与 Vault 均只安装这一 registry 产物，不能通过 workspace、版本范围或本地源码替代它。
 
-Vault Release Tag 继续只属于 Vault，并只表达要构建的不可变 `vault_sha`。它不能触发 npm 发布，也不能被 Contract Package Release 取代。Vault 端工作流只匹配专用内容发布 tag（`vault-release-*`），并在 Release Preflight 固定的精确 Contract Package 版本与 Site 派发回执中传递同一 `contract_version`。
+Vault Release Tag 继续只属于 Vault，并只表达要构建的不可变 `vault_sha`。它不能触发 npm 发布，也不能被 Contract Package Release 取代。Vault 作者以版本化 `vX.Y.Z` tag 表示内容发布；Vault 端工作流只匹配 `v*`，并在 Release Preflight 固定的精确 Contract Package 版本与 Site 派发回执中传递同一 `contract_version`。
 
 Site Repository 在检出 Vault Revision 前，使用已安装 Contract Package 导出的版本验证回执。缺失、无效或与已安装精确版本不一致的 `contract_version` 均为 Blocking Error，不能构建或部署 Published Site。这样，Vault Revision receipt、Published Site Build 与 artifact receipt 可共同追溯到同一个不可变 Contract Package Release。
 
