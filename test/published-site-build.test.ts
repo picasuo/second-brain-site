@@ -29,7 +29,7 @@ test("a Vault Revision with one Published Note produces a Notes Index and public
   expect(notePage).toContain("A fixture Vault Revision is the explicit source for this published page.");
 });
 
-test("Home introduces the site and offers the only entry into the Notes Index", async () => {
+test("Home presents picasuo's profile and links to supported platforms", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);
 
@@ -40,11 +40,15 @@ test("Home introduces the site and offers the only entry into the Notes Index", 
 
   const home = await readFile(join(outputDirectory, "index.html"), "utf8");
 
-  expect(home).toContain("你好，这里是我整理思考与实践的地方。");
+  expect(home).toContain("picasuo --info");
+  expect(home).toContain("杭州");
+  expect(home).toContain("2021 — 至今");
+  expect(home).toContain('href="https://www.immed.co/"');
+  expect(home).toContain("frontend");
   expect(home).toContain('href="/notes/"');
-  expect(home).toContain("浏览笔记");
+  expect(home).toContain('href="https://github.com/picasuo"');
+  expect(home).toContain('href="https://x.com/picasuo"');
   expect(home).not.toContain("First Published Note");
-  expect(home).not.toContain("<nav");
 });
 
 test("a Publish Set excludes private notes, orders Published Notes, and exposes Canonical Tag", async () => {

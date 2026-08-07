@@ -3,11 +3,95 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../site-config";
 ---
 
-<BaseLayout title={siteConfig.home.title.join("")}>
-  <section class="home-introduction" aria-labelledby="home-title">
-    <p class="section-kicker">{siteConfig.home.eyebrow}</p>
-    <h1 id="home-title">{siteConfig.home.title[0]}<br />{siteConfig.home.title[1]}</h1>
-    <p>{siteConfig.home.description}</p>
-    <a class="primary-link" href="/notes/">{siteConfig.home.ctaLabel}<span aria-hidden="true"> →</span></a>
+<BaseLayout title={siteConfig.home.title}>
+  <section class="profile-home" aria-label="picasuo 个人主页">
+    <div class="pixel-field" aria-hidden="true"></div>
+    <div class="pixel-glow" aria-hidden="true"></div>
+
+    <div class="terminal-window">
+      <div class="terminal-titlebar" aria-hidden="true">
+        <span class="window-controls"><i></i><i></i><i></i></span>
+        <span class="window-title">picasuo@github-page:~</span>
+        <span class="window-spacer"></span>
+      </div>
+
+      <div class="terminal-body">
+        <div class="terminal-hero">
+          <p class="terminal-prompt"><span>$</span> picasuo --info</p>
+        </div>
+
+        <dl class="terminal-info" aria-label="个人信息">
+          <div>
+            <dt>location</dt>
+            <dd>杭州</dd>
+          </div>
+          <div>
+            <dt>experience</dt>
+            <dd>2021 — 至今</dd>
+          </div>
+          <div>
+            <dt>current employer</dt>
+            <dd><a href="https://www.immed.co/" target="_blank" rel="noreferrer">一目可视 <span aria-hidden="true">↗</span></a></dd>
+          </div>
+          <div>
+            <dt>support</dt>
+            <dd>web frontend <span aria-hidden="true">│</span> electron <span aria-hidden="true">│</span> flutter</dd>
+          </div>
+        </dl>
+
+        <nav class="profile-links" aria-label="个人链接">
+          <p class="links-heading"><span>$</span> ls ./links</p>
+          <ul>
+            {siteConfig.home.links.map((link) => (
+              <li>
+                <a class="profile-link" data-profile-link href={link.href} target={link.href.startsWith("http") ? "_blank" : undefined} rel={link.href.startsWith("http") ? "noreferrer" : undefined}>
+                  <span class="link-marker" aria-hidden="true">&gt;</span>
+                  <span class="link-label">{link.label}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <p class="terminal-status"><span aria-hidden="true"></span> available for interesting work</p>
+      </div>
+    </div>
   </section>
 </BaseLayout>
+
+<script>
+  const profileLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-profile-link]"));
+  let selectedLinkIndex = 0;
+
+  const selectProfileLink = (nextIndex: number, moveFocus = false) => {
+    selectedLinkIndex = (nextIndex + profileLinks.length) % profileLinks.length;
+
+    profileLinks.forEach((link, index) => {
+      link.classList.toggle("is-selected", index === selectedLinkIndex);
+    });
+
+    if (moveFocus) profileLinks[selectedLinkIndex]?.focus({ preventScroll: true });
+  };
+
+  if (profileLinks.length > 0) {
+    selectProfileLink(0);
+
+    profileLinks.forEach((link, index) => {
+      link.addEventListener("mouseenter", () => selectProfileLink(index));
+      link.addEventListener("focus", () => selectProfileLink(index));
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        selectProfileLink(selectedLinkIndex + (event.key === "ArrowDown" ? 1 : -1), true);
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        profileLinks[selectedLinkIndex]?.click();
+      }
+    });
+  }
+</script>
