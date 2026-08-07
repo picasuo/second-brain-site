@@ -80,6 +80,14 @@ _Avoid_: 两套独立的发布校验、仅供作者参考的检查
 在 Vault 创建 release tag 前运行的 Publication Contract 校验。默认只报告诊断；仅在作者显式请求时，Vault 侧可为缺失的 Stable Note Slug 写入建议值，随后必须重新校验、审阅并提交。
 _Avoid_: 静默改写、Site Repository 对 Vault 的写入
 
+**Contract Package Release**:
+从已验证的 Contract Repository 提交发布到 npm 的、不可变的 `@picasuo/publish-set-contract` 精确版本；Vault 与 Site Repository 均以该精确版本作为 Publication Contract。
+_Avoid_: Site 发布、Vault Release Tag、浮动依赖版本
+
+**Vault Release Tag**:
+标记一个 Vault Revision 并触发 Published Site 构建的 Vault Git tag；它表达内容快照，不表达 Contract Package Release。
+_Avoid_: Contract Package Release、Site Repository 根版本
+
 **Notes Index**:
 `/notes/` 页面，主要按 Published Note Order 展示所有 Published Note。
 _Avoid_: Home、标签页

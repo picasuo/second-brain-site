@@ -41,11 +41,11 @@ test("the repository dispatch workflow checks out and builds the supplied Vault 
 test("a matching dispatch receipt is accepted and records both immutable release values", () => {
   expect(validateDispatchReceipt({
     vaultSha: "a".repeat(40),
-    contractVersion: "0.1.0",
-    workspaceContractVersion: "0.1.0",
+    contractVersion: "0.2.1",
+    installedContractVersion: "0.2.1",
   })).toEqual({
     vaultSha: "a".repeat(40),
-    contractVersion: "0.1.0",
+    contractVersion: "0.2.1",
   });
 });
 
@@ -53,30 +53,30 @@ test("a mismatched dispatch receipt blocks deployment before a Vault Revision is
   expect(() => validateDispatchReceipt({
     vaultSha: "a".repeat(40),
     contractVersion: "0.0.9",
-    workspaceContractVersion: "0.1.0",
-  })).toThrow("declared contract_version 0.0.9 does not match Site workspace contract version 0.1.0");
+    installedContractVersion: "0.2.1",
+  })).toThrow("declared contract_version 0.0.9 does not match Site installed Contract version 0.2.1");
 });
 
 test("a dispatch receipt requires a complete Vault SHA and declared contract version", () => {
   expect(() => validateDispatchReceipt({
     vaultSha: "a".repeat(39),
-    contractVersion: "0.1.0",
-    workspaceContractVersion: "0.1.0",
+    contractVersion: "0.2.1",
+    installedContractVersion: "0.2.1",
   })).toThrow("vault_sha must be a full 40-character Git commit SHA");
   expect(() => validateDispatchReceipt({
     vaultSha: "a".repeat(40),
     contractVersion: "",
-    workspaceContractVersion: "0.1.0",
+    installedContractVersion: "0.2.1",
   })).toThrow("contract_version is required");
 });
 
 test("the Pages artifact receipt records both immutable release values", () => {
   expect(createPublicationReceipt({
     vaultSha: "a".repeat(40),
-    contractVersion: "0.1.0",
+    contractVersion: "0.2.1",
   })).toEqual({
     vault_sha: "a".repeat(40),
-    contract_version: "0.1.0",
+    contract_version: "0.2.1",
   });
 });
 
@@ -86,11 +86,11 @@ test("the artifact receipt writer persists both immutable release values", async
 
   await writePublicationReceipt(outputDirectory, {
     vaultSha: "a".repeat(40),
-    contractVersion: "0.1.0",
+    contractVersion: "0.2.1",
   });
 
   await expect(readFile(join(outputDirectory, "publication-receipt.json"), "utf8")).resolves.toBe(
-    '{\n  "vault_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",\n  "contract_version": "0.1.0"\n}\n',
+    '{\n  "vault_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",\n  "contract_version": "0.2.1"\n}\n',
   );
 });
 
@@ -136,7 +136,7 @@ test("a dispatched Vault Revision is built after the Vault default branch advanc
   expect(notePage).toContain("Dispatched Vault Revision");
   expect(notePage).not.toContain("Advanced default branch");
   expect(result.diagnostics).toContain(`Vault Revision: ${vaultSha}`);
-  expect(result.diagnostics).toContain("Publication Contract Version: 0.1.0");
+  expect(result.diagnostics).toContain("Publication Contract Version: 0.2.1");
 }, 10_000);
 
 function publishedNote(body: string): string {

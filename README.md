@@ -23,7 +23,7 @@ Before enabling the workflow, set the Site Repository GitHub Actions variable
 `VAULT_REPOSITORY` to the Vault's `owner/repository` name and set
 `VAULT_READ_TOKEN` to a token that can read that Vault. The workflow checks out
 the supplied `vault_sha` into `.vault-revision` only after the declared
-`contract_version` matches the Site workspace package version. It verifies the
+`contract_version` matches the Site's exact installed Contract Package version. It verifies the
 checked-out commit, records both values in the run summary and build diagnostics,
 and includes `publication-receipt.json` with both values in the Published Site
 artifact named with that SHA.

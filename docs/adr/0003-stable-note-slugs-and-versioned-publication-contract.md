@@ -1,6 +1,6 @@
 # Stable Note Slugs and a Versioned Publication Contract
 
-Published Note URLs use a required, persistent Frontmatter `slug`, never a Vault file path fallback. The public Site Repository will publish the side-effect-free Publication Contract as an npm package; the private Vault uses that exact package version for Release Preflight and the Site Repository rejects a dispatch whose declared contract version differs from its own. This preserves Vault privacy while making the authored release and the deployed release enforce the same rules.
+Published Note URLs use a required, persistent Frontmatter `slug`, never a Vault file path fallback. The independent public Contract Repository publishes the side-effect-free Publication Contract as an npm package; the private Vault and Site Repository each install that exact package version, and the Site Repository rejects a dispatch whose declared contract version differs from its installed package. This preserves Vault privacy while making the authored release and the deployed release enforce the same rules.
 
 ## Considered Options
 

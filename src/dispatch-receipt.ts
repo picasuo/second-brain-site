@@ -1,7 +1,7 @@
 export interface DispatchReceiptInput {
   contractVersion: string | undefined;
   vaultSha: string | undefined;
-  workspaceContractVersion: string;
+  installedContractVersion: string;
 }
 
 export interface DispatchReceipt {
@@ -12,7 +12,7 @@ export interface DispatchReceipt {
 export function validateDispatchReceipt({
   vaultSha,
   contractVersion,
-  workspaceContractVersion,
+  installedContractVersion,
 }: DispatchReceiptInput): DispatchReceipt {
   if (!vaultSha || !/^[0-9a-f]{40}$/.test(vaultSha)) {
     throw new Error("repository_dispatch client_payload.vault_sha must be a full 40-character Git commit SHA.");
@@ -20,9 +20,9 @@ export function validateDispatchReceipt({
   if (!contractVersion) {
     throw new Error("repository_dispatch client_payload.contract_version is required.");
   }
-  if (contractVersion !== workspaceContractVersion) {
+  if (contractVersion !== installedContractVersion) {
     throw new Error(
-      `repository_dispatch declared contract_version ${contractVersion} does not match Site workspace contract version ${workspaceContractVersion}.`,
+      `repository_dispatch declared contract_version ${contractVersion} does not match Site installed Contract version ${installedContractVersion}.`,
     );
   }
 
