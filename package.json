@@ -4,6 +4,7 @@
   "packageManager": "pnpm@10.24.0",
   "type": "module",
   "scripts": {
+    "dev": "ASTRO_TELEMETRY_DISABLED=1 astro dev",
     "build": "tsx scripts/build-published-site.ts",
     "test": "vitest run --maxWorkers=1 --minWorkers=1 --testTimeout=10000",
     "test:watch": "vitest",
