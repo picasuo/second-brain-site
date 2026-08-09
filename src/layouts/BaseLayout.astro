@@ -320,6 +320,9 @@ const { title } = Astro.props;
 
   .terminal-body { min-height: 0; padding: clamp(1.8rem, 3vw, 3.25rem); overflow-y: auto; overscroll-behavior: contain; }
   .terminal-footer { border-top: 1px solid rgba(255, 255, 255, 0.13); }
+  .terminal-footer-link { display: block; padding: 1rem clamp(1.3rem, 3vw, 3.25rem); color: #c8cec1; font: 700 .8rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; text-decoration: none; white-space: nowrap; transition: color 140ms ease, background-color 140ms ease; }
+  .terminal-footer-link:hover { color: var(--accent-strong); background: rgba(178,247,155,.07); }
+  .terminal-footer-link:active { background: rgba(178,247,155,.13); }
   .terminal-hero { display: flex; gap: clamp(1rem, 3vw, 2rem); align-items: center; }
   .terminal-command { margin: 0; color: #e7e9e2; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: clamp(0.8rem, 1.6vw, 1rem); font-weight: 700; }
   .terminal-command span { color: var(--accent); }
@@ -345,6 +348,37 @@ const { title } = Astro.props;
   .terminal-status { display: flex; gap: .48rem; align-items: center; margin: clamp(2.8rem, 5vw, 4.2rem) 0 0; color: #9da399; font: .75rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
   .terminal-status span { width: .48rem; height: .48rem; border-radius: 50%; background: var(--accent); box-shadow: 0 0 .75rem rgba(178,247,155,.78); animation: status-pulse 2.2s ease-in-out infinite; }
 
+  .notes-index { max-width: 64rem; }
+  .notes-index > .terminal-command { margin-bottom: 1.6rem; }
+  .notes-index h1 { margin: 0; color: #f0f2eb; font: 650 clamp(2rem, 5vw, 3.6rem)/1 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: -.06em; }
+  .notes-summary { display: flex; flex-wrap: wrap; gap: .6rem 1.8rem; margin: 1rem 0 2.3rem; color: #dce1d5; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-summary span::first-letter { color: #888e85; }
+  .notes-filters { display: grid; gap: .85rem; margin-bottom: 1.25rem; }
+  .tag-filters { display: flex; flex-wrap: wrap; gap: .45rem; }
+  .tag-filter { min-height: 2rem; padding: .25rem .58rem; border: 1px solid #3c443a; border-radius: .25rem; color: #aeb5a8; background: transparent; cursor: pointer; font: 650 .75rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease; }
+  .tag-filter:hover, .tag-filter[aria-pressed="true"] { border-color: rgba(178,247,155,.7); color: var(--accent-strong); background: rgba(178,247,155,.09); }
+  .tag-filter:focus-visible { outline: 3px solid var(--accent); outline-offset: .15rem; }
+  .tag-filter:active { transform: translateY(1px); background: rgba(178,247,155,.17); }
+  .notes-search { display: grid; grid-template-columns: 4.8rem minmax(0, 1fr); gap: .75rem; align-items: center; max-width: 28rem; color: #888e85; font: .76rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-search input { width: 100%; min-width: 0; min-height: 2rem; padding: .35rem .55rem; border: 1px solid #3c443a; border-radius: .25rem; color: #eff3e9; background: rgba(255,255,255,.035); font: inherit; }
+  .notes-search input::placeholder { color: #737970; }
+  .notes-search input:focus { border-color: var(--accent); outline: none; }
+  .notes-table { border-top: 1px solid rgba(255,255,255,.16); }
+  .notes-table-header, .note-row { display: grid; grid-template-columns: 7.8rem minmax(0, 1fr) minmax(9rem, .55fr); gap: 1rem; align-items: center; }
+  .notes-table-header { padding: .7rem .75rem; color: #81877e; font: 700 .68rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .08em; }
+  .note-list { display: block; margin: 0; padding: 0; list-style: none; }
+  .note-list > li { border-top: 1px solid rgba(255,255,255,.1); }
+  .note-list > li:last-child { border-bottom: 1px solid rgba(255,255,255,.1); }
+  .note-row { min-height: 3.5rem; padding: .85rem .75rem; color: #e7ebe2; text-decoration: none; transition: color 140ms ease, background-color 140ms ease, transform 140ms ease; }
+  .note-row:hover { color: var(--accent-strong); background: rgba(178,247,155,.07); }
+  .note-row:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .note-row:active { background: rgba(178,247,155,.15); transform: translateY(1px); }
+  .note-row time, .note-row-tags { color: #a2a89e; font: .75rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .note-row-title { overflow-wrap: anywhere; font: 650 .95rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .note-row-tags { overflow-wrap: anywhere; }
+  .notes-no-match, .notes-empty { margin: 1.5rem 0 0; color: #aeb5a8; font: .84rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-no-match span, .notes-empty span { color: var(--accent); }
+
   @keyframes terminal-enter { from { opacity: 0; transform: translateY(1.5rem) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes status-pulse { 50% { opacity: .4; box-shadow: 0 0 .2rem rgba(178,247,155,.3); } }
 
@@ -356,10 +390,20 @@ const { title } = Astro.props;
     .terminal-info { gap: .72rem; }
     .terminal-info div { grid-template-columns: 6.15rem minmax(0, 1fr); gap: .55rem; }
     .profile-links { margin-top: 3.5rem; }
+    .notes-summary { margin-bottom: 1.8rem; }
+    .notes-filters { gap: .9rem; }
+    .tag-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .25rem; }
+    .tag-filter { flex: 0 0 auto; }
+    .notes-search { grid-template-columns: 1fr; gap: .4rem; max-width: none; }
+    .notes-table-header { display: none; }
+    .notes-table { border-top: 0; }
+    .note-list > li:first-child { border-top: 1px solid rgba(255,255,255,.1); }
+    .note-row { grid-template-columns: 1fr; gap: .35rem; min-height: 0; padding: 1rem .35rem; }
+    .note-row-title { font-size: 1rem; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .terminal-window, .terminal-status span { animation: none; }
-    .profile-links a, .link-marker, .link-label { transition: none; }
+    .profile-links a, .link-marker, .link-label, .terminal-footer-link, .tag-filter, .note-row { transition: none; }
   }
 </style>

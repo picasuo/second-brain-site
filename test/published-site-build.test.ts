@@ -68,7 +68,7 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
   expect(notesIndex).toContain('href="/notes/latest-note/"');
   expect(notesIndex).toContain("engineering");
   expect(notesIndex).toContain("运维");
-  expect(notesIndex.match(/engineering/g)).toHaveLength(1);
+  expect(notesIndex).toContain("data-note-tags=");
   expect(notesIndex).not.toContain("Private Note");
   await expect(readFile(join(outputDirectory, "notes", "private", "index.html"), "utf8")).rejects.toThrow("ENOENT");
   expect(notesIndex.indexOf("latest-note")).toBeLessThan(notesIndex.indexOf("Alpha"));
@@ -78,6 +78,46 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
   expect(alphaNote).toContain("运维");
   expect(alphaNote).toContain('href="/notes/"');
   expect(alphaNote).not.toContain('href="/tags/"');
+});
+
+test("a Notes Index exposes the published count, latest date, filter data, and terminal navigation", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/publish-set-metadata/", import.meta.url),
+    outputDirectory,
+  });
+
+  const notesIndex = await readFile(join(outputDirectory, "notes", "index.html"), "utf8");
+
+  expect(notesIndex).toContain("total 3 篇");
+  expect(notesIndex).toContain("latest 2026-08-05");
+  expect(notesIndex).toContain("--all");
+  expect(notesIndex.indexOf("--all")).toBeLessThan(notesIndex.indexOf('data-tag="运维"'));
+  expect(notesIndex).toContain('data-note-title="latest-note"');
+  expect(notesIndex).toContain("data-note-tags=");
+  expect(notesIndex).toContain('href="/notes/latest-note/"');
+  expect(notesIndex).toContain("← Back to home");
+  expect(notesIndex).not.toContain("READ");
+  expect(notesIndex).not.toContain("topics");
+});
+
+test("an empty Publish Set renders its confirmed zero-note state without filters", async () => {
+  const vaultDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-vault-"));
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(vaultDirectory, outputDirectory);
+
+  await buildPublishedSite({ vaultRevisionPath: vaultDirectory, outputDirectory });
+
+  const notesIndex = await readFile(join(outputDirectory, "notes", "index.html"), "utf8");
+
+  expect(notesIndex).toContain("total 0 篇");
+  expect(notesIndex).toContain("latest —");
+  expect(notesIndex).toContain("notes: no published notes");
+  expect(notesIndex).not.toContain("--all");
+  expect(notesIndex).not.toContain("DATE");
+  expect(notesIndex).toContain("← Back to home");
 });
 
 test("a Published Note without a valid date prevents publication with its source path", async () => {

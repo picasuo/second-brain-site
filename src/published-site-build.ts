@@ -41,6 +41,7 @@ type VaultNote = {
 
 type PublishedNote = VaultNote & {
   date: string;
+  filename: string;
   renderedContent: string;
   tableOfContents: TableOfContentsItem[];
   tags: string[];
@@ -118,6 +119,7 @@ function toPublishedNotes(vaultNotes: VaultNote[]): PublishedNote[] {
     return [{
       ...note,
       date: note.frontmatter.date as string,
+      filename: basename(note.sourcePath),
       renderedContent: "",
       tableOfContents: [],
       tags: canonicalTags(note.frontmatter.tags, note.sourcePath),
@@ -292,7 +294,7 @@ async function copyAttachments(outputDirectory: string, attachments: Iterable<At
 
 function renderGeneratedNotesModule(notes: PublishedNote[]): string {
   const publicNotes = notes.map(({ absolutePath: _absolutePath, body: _body, frontmatter: _frontmatter, headingIds: _headingIds, sourcePath: _sourcePath, ...note }) => note);
-  return `export type TableOfContentsItem = { depth: 2 | 3; id: string; text: string };\n\nexport type PublishedNote = { title: string; date: string; tags: string[]; noteUrl: string; renderedContent: string; tableOfContents: TableOfContentsItem[] };\n\nexport const publishedNotes: PublishedNote[] = ${JSON.stringify(publicNotes, null, 2)};\n`;
+  return `export type TableOfContentsItem = { depth: 2 | 3; id: string; text: string };\n\nexport type PublishedNote = { title: string; date: string; filename: string; tags: string[]; noteUrl: string; renderedContent: string; tableOfContents: TableOfContentsItem[] };\n\nexport const publishedNotes: PublishedNote[] = ${JSON.stringify(publicNotes, null, 2)};\n`;
 }
 
 function runAstroBuild(outputDirectory: string): Promise<void> {
