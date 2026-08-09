@@ -1,6 +1,8 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astro";
 import { publishedNotes } from "../../generated/published-notes";
+import TerminalShell from "../../layouts/TerminalShell.astro";
 
 export function getStaticPaths() {
   return publishedNotes.map((note) => ({
@@ -13,29 +15,80 @@ const { note } = Astro.props;
 ---
 
 <BaseLayout title={note.title}>
-  <article class="note">
-    <a class="return-link" href="/notes/">← 返回笔记</a>
-    <header class="note-header">
-      <h1>{note.title}</h1>
-      <div class="note-metadata">
-        <time datetime={note.date}>{note.date}</time>
-        {note.tags.length > 0 && (
-          <ul class="tag-list" aria-label="标签">
-            {note.tags.map((tag) => <li>{tag}</li>)}
-          </ul>
+  <TerminalShell ariaLabel={`阅读 ${note.title}`} windowTitle={note.filename}>
+    <article class="terminal-note">
+      <TerminalCommandDisplay command={`view ~/notes/${note.filename}`} />
+      <header class="note-header">
+        <h1>{note.title}</h1>
+        <div class="note-metadata">
+          <time datetime={note.date}>{note.date}</time>
+          {note.tags.length > 0 && (
+            <ul class="tag-list" aria-label="标签">
+              {note.tags.map((tag) => <li>{tag}</li>)}
+            </ul>
+          )}
+        </div>
+      </header>
+
+      {note.tableOfContents.length > 0 && (
+        <details class="narrow-table-of-contents">
+          <summary>Table of Contents</summary>
+          <ol>
+            {note.tableOfContents.map((item) => <li class={`depth-${item.depth}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
+          </ol>
+        </details>
+      )}
+
+      <div class="note-layout">
+        {note.tableOfContents.length > 0 && (
+          <nav class="wide-table-of-contents" aria-label="目录">
+            <strong>Table of Contents</strong>
+            <ol>
+              {note.tableOfContents.map((item) => <li class={`depth-${item.depth}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
+            </ol>
+          </nav>
         )}
+        <div class="note-body" set:html={note.renderedContent} />
       </div>
-    </header>
-    <div class="note-layout">
-    {note.tableOfContents.length > 0 && (
-      <nav class="table-of-contents" aria-label="目录">
-        <strong>目录</strong>
-        <ol>
-          {note.tableOfContents.map((item) => <li class={`depth-${item.depth}`}><a href={`#${item.id}`}>{item.text}</a></li>)}
-        </ol>
-      </nav>
-    )}
-      <div class="note-body" set:html={note.renderedContent} />
-    </div>
-  </article>
+    </article>
+
+    <a slot="footer" class="terminal-footer-link" href="/notes/">← Back to notes</a>
+  </TerminalShell>
 </BaseLayout>
+
+<style is:global>
+  .terminal-footer-link { display: block; padding: 1rem clamp(1.3rem, 3vw, 3.25rem); color: #c8cec1; font: 700 .8rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; text-decoration: none; white-space: nowrap; transition: color 140ms ease, background-color 140ms ease; }
+  .terminal-footer-link:hover { color: var(--accent-strong); background: rgba(178,247,155,.07); }
+  .terminal-footer-link:active { background: rgba(178,247,155,.13); }
+
+  .terminal-note { max-width: 70rem; }
+  .terminal-note > .terminal-command { margin-bottom: clamp(1.6rem, 3vw, 2.6rem); }
+  .terminal-note .note-header { max-width: 50rem; margin-bottom: 2.5rem; }
+  .terminal-note h1 { margin: 0; font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; font-size: clamp(2.35rem, 6vw, 4.8rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1.08; }
+  .terminal-note .note-header .note-metadata { margin-top: 1.2rem; }
+
+  .terminal-note .note-layout { display: block; grid-template-columns: none; grid-template-areas: none; gap: 0; }
+  .terminal-note .note-body { grid-area: auto; }
+  .wide-table-of-contents { display: none; }
+  .narrow-table-of-contents { margin: 0 0 2.5rem; border: 1px solid var(--rule); border-radius: .35rem; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+  .narrow-table-of-contents summary { padding: .9rem 1rem; color: var(--ink); cursor: pointer; font: 650 .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .06em; }
+  .narrow-table-of-contents ol { display: grid; gap: .55rem; margin: 0; padding: 0 1rem 1rem; list-style: none; }
+  .narrow-table-of-contents .depth-3 { padding-left: .8rem; }
+  .narrow-table-of-contents a { color: var(--muted); text-decoration: none; }
+  .narrow-table-of-contents a:hover { color: var(--accent-strong); text-decoration: underline; }
+
+  @media (min-width: 1200px) {
+    .terminal-note .note-layout { display: grid; grid-template-columns: minmax(12.5rem, 16rem) minmax(0, 50rem); grid-template-areas: none; gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+    .wide-table-of-contents { position: sticky; top: 0; display: block; padding: .2rem 1rem .2rem 0; border-right: 1px solid var(--rule); color: var(--muted); font-size: .88rem; line-height: 1.45; }
+    .wide-table-of-contents > strong { display: block; margin-bottom: .8rem; font: 650 .74rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: .08em; }
+    .wide-table-of-contents ol { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+    .wide-table-of-contents .depth-3 { padding-left: .8rem; }
+    .wide-table-of-contents a { color: var(--muted); text-decoration: none; }
+    .wide-table-of-contents a:hover { color: var(--accent-strong); text-decoration: underline; }
+    .narrow-table-of-contents { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-footer-link { transition: none; }
+  }
+</style>
