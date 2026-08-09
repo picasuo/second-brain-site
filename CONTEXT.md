@@ -57,7 +57,7 @@ Content Link 中指向 Markdown 标题的片段；使用 Astro 自动生成的�
 _Avoid_: 自定义锚点体系、手写重复标题 ID
 
 **Table of Contents**:
-Published Note 页面中由二级、三级 Markdown 标题自动生成的页面内导航，并链接至对应 Heading Anchor。
+Published Note 页面中由二级、三级 Markdown 标题自动生成的页面内导航，并链接至对应 Heading Anchor；窄屏默认收起，展开时完整显示。
 _Avoid_: 手写目录、独立锚点体系
 
 **Unresolved Content Link**:
@@ -97,11 +97,19 @@ _Avoid_: Home、标签页
 _Avoid_: Notes Index、笔记列表
 
 **Contextual Navigation**:
-MVP 的页面间导航：Home 仅提供进入 Notes Index 的入口；Published Note 页面仅提供返回 Notes Index 的入口；不设置常驻的全局导航。
+MVP 的页面间导航：Home 提供进入 Notes Index 的入口；Notes Index 与 Published Note 的窗口固定 footer 分别提供返回 Home 和 Notes Index 的入口；不设置常驻的全局导航。
 _Avoid_: 全局导航栏、站点范围菜单
 
+**Terminal Command Display**:
+终端拟态中用于展示上下文或命令的静态文本；它不承担导航、筛选或其他点击交互。
+_Avoid_: 链接、按钮、可点击命令
+
+**Notes Index Filter**:
+`/notes/` 中仅在浏览器内运行的 Published Note 筛选器：一个 Canonical Tag 与不区分大小写的标题搜索可同时使用，并取两者交集；它不查询正文或私密内容，也不进入 URL，页面重新进入时恢复默认状态。
+_Avoid_: 全文搜索、服务端搜索、标签页
+
 **Search Index**:
-仅包含 Published Note 的标题、正文和 Canonical Tag 的构建期搜索索引；MVP 不提供搜索，此概念留待后续支持搜索时采用。
+未来可用于站点全文搜索的构建期索引，可包含 Published Note 的标题、正文和 Canonical Tag；它不同于 Notes Index Filter。
 _Avoid_: 私密内容索引、运行时搜索服务
 
 **Note URL Conflict**:
@@ -113,8 +121,12 @@ _Avoid_: 自动消歧、静默覆盖
 _Avoid_: URL 别名、301 重定向
 
 **Published Note Metadata**:
-Published Note 的展示属性：`title` 缺失时回退为文件名；`date` 必填且只接受 `YYYY-MM-DD`，缺失或格式不合法即为构建错误；`tags` 可为空，并以 Canonical Tag 显示在 Notes Index 列表项和 Published Note 正文页。
+Published Note 的展示属性：`title` 缺失时回退为移除 `.md` 后缀的 Published Note Filename；`date` 必填且只接受 `YYYY-MM-DD`，缺失或格式不合法即为构建错误；`tags` 可为空，并以 Canonical Tag 显示在 Notes Index 列表项和 Published Note 正文页。
 _Avoid_: 虚构日期、可缺失日期、带时间的日期
+
+**Published Note Filename**:
+Published Note 的 Vault 源文件最终文件名（含 `.md`），仅可作为终端拟态的显示标签；它不决定 Note URL，也不包含 Vault 目录。
+_Avoid_: Stable Note Slug、Vault 路径、页面标题
 
 **Canonical Tag**:
 由 Published Note 的 YAML `tags` 列表产生的标签标识；比较时忽略大小写、去除首尾空格并统一全角与半角，等价写法归入同一标签；同一篇笔记中的等价标签自动合并。其展示名称使用小写英文、去首尾空格和半角字符，中文保持原样。

@@ -1,0 +1,10 @@
+---
+interface Props {
+  className?: string;
+  command: string;
+}
+
+const { className, command } = Astro.props;
+---
+
+<p class:list={["terminal-command", className]}><span>$</span> {command}</p>

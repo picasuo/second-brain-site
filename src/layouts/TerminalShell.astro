@@ -1,0 +1,26 @@
+---
+interface Props {
+  ariaLabel: string;
+  windowTitle: string;
+}
+
+const { ariaLabel, windowTitle } = Astro.props;
+const hasFooter = Astro.slots.has("footer");
+---
+
+<section class="terminal-shell" aria-label={ariaLabel}>
+  <div class="pixel-field" aria-hidden="true"></div>
+  <div class="pixel-glow" aria-hidden="true"></div>
+
+  <div class:list={["terminal-window", { "has-terminal-footer": hasFooter }]}>
+    <div class="terminal-titlebar" aria-hidden="true">
+      <span class="window-controls"><i></i><i></i><i></i></span>
+      <span class="window-title">{windowTitle}</span>
+      <span class="window-spacer"></span>
+    </div>
+
+    <div class="terminal-body"><slot /></div>
+
+    {hasFooter && <footer class="terminal-footer"><slot name="footer" /></footer>}
+  </div>
+</section>
