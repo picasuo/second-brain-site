@@ -7,35 +7,45 @@ const { tags } = Astro.props;
 ---
 
 <section class="notes-filter-prompt" data-notes-filter-prompt aria-label="Notes Index Filter Prompt">
-  <label class="notes-filter-prompt-line">
+  <div class="notes-filter-prompt-line" role="group" aria-label="Notes Index Filter Prompt">
     <span class="notes-filter-command"><i aria-hidden="true">$</i> ls -la ./notes --sort=date</span>
     <span class="notes-filter-pipe" aria-hidden="true">|</span>
     <span class="notes-filter-command">grep -i</span>
     <span class="notes-token-query" data-token-query>
       <span class="notes-tag-tokens" data-tag-tokens aria-live="polite"></span>
-      <input
-        data-notes-search
-        type="search"
-        autocomplete="off"
-        placeholder="# filters tags · search titles"
-        aria-label="Filter Published Notes by tag or title"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-controls="notes-tag-suggestions"
-        aria-expanded="false"
-        autofocus
-      />
-      <span class="notes-filter-cursor" data-notes-filter-cursor aria-hidden="true"></span>
+      <span class="notes-title-query-editor" data-notes-title-query-editor>
+        <input
+          data-notes-search
+          type="search"
+          autocomplete="off"
+          aria-label="Filter Published Notes by tag or title"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="notes-tag-suggestions"
+          aria-expanded="false"
+          autofocus
+        />
+        <span class="notes-query-display" data-notes-query-display aria-hidden="true">
+          <span data-notes-query-before></span><span data-notes-query-after><span class="notes-filter-cursor" data-notes-filter-cursor aria-hidden="true"></span></span>
+          <span class="notes-query-placeholder" data-notes-query-placeholder># filters tags · search titles</span>
+        </span>
+      </span>
     </span>
-  </label>
+  </div>
   <ul id="notes-tag-suggestions" class="notes-tag-suggestions" data-tag-suggestions role="listbox" aria-label="Canonical Tag suggestions" hidden>
     {tags.map((tag, index) => <li id={`notes-tag-option-${index}`} role="option" data-tag-suggestion data-tag={tag} aria-selected="false">#{tag}</li>)}
   </ul>
 </section>
 
 <script>
+  type Caret = { kind: "token"; boundary: number } | { kind: "query"; offset: number };
+
+  const prompt = document.querySelector<HTMLElement>("[data-notes-filter-prompt]");
   const search = document.querySelector<HTMLInputElement>("[data-notes-search]");
   const tagTokens = document.querySelector<HTMLElement>("[data-tag-tokens]");
+  const queryBefore = document.querySelector<HTMLElement>("[data-notes-query-before]");
+  const queryAfter = document.querySelector<HTMLElement>("[data-notes-query-after]");
+  const queryPlaceholder = document.querySelector<HTMLElement>("[data-notes-query-placeholder]");
   const suggestionList = document.querySelector<HTMLElement>("[data-tag-suggestions]");
   const suggestionOptions = Array.from(document.querySelectorAll<HTMLElement>("[data-tag-suggestion]"));
   const rows = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-note-row]"));
@@ -43,14 +53,23 @@ const { tags } = Astro.props;
   const noMatch = document.querySelector<HTMLElement>("[data-no-match]");
   const normalize = (value: string) => value.normalize("NFKC").trim().toLocaleLowerCase();
   let selectedTags: string[] = [];
+  let caret: Caret = { kind: "query", offset: 0 };
   let activeSuggestion = -1;
   let suggestionsDismissed = false;
+  let isComposing = false;
+
+  const queryValue = () => search?.value ?? "";
+  const queryCaretOffset = () => caret.kind === "query" ? caret.offset : null;
 
   const currentTagSearch = () => {
-    const value = search?.value ?? "";
-    const match = value.match(/(?:^|\s)#([^\s]*)$/u);
+    const value = queryValue();
+    const offset = queryCaretOffset();
+    if (offset === null) return null;
+    const beforeCaret = value.slice(0, offset);
+    const match = beforeCaret.match(/(?:^|\s)#([^\s]*)$/u);
     if (match === null) return null;
-    return { fragment: normalize(match[1]), hashIndex: value.lastIndexOf("#") };
+    const hashIndex = beforeCaret.lastIndexOf("#");
+    return { fragment: normalize(match[1]), hashIndex, endIndex: offset };
   };
 
   const availableSuggestions = () => {
@@ -62,14 +81,41 @@ const { tags } = Astro.props;
     });
   };
 
-  const renderTokens = () => {
-    if (tagTokens === null) return;
-    tagTokens.replaceChildren(...selectedTags.map((tag) => {
-      const token = document.createElement("span");
-      token.className = "notes-tag-token";
-      token.textContent = `#${tag}`;
-      return token;
-    }));
+  const cursor = () => {
+    const element = document.createElement("span");
+    element.className = "notes-filter-cursor";
+    element.dataset.notesFilterCursor = "";
+    element.setAttribute("aria-hidden", "true");
+    return element;
+  };
+
+  const renderCaret = () => {
+    if (tagTokens !== null) {
+      const fragments: Node[] = [];
+      for (let boundary = 0; boundary <= selectedTags.length; boundary += 1) {
+        if (caret.kind === "token" && caret.boundary === boundary) fragments.push(cursor());
+        if (boundary === selectedTags.length) continue;
+        const tag = selectedTags[boundary];
+        const token = document.createElement("button");
+        token.type = "button";
+        token.className = "notes-tag-token";
+        token.dataset.tagToken = tag;
+        token.setAttribute("aria-label", `Move caret before or after #${tag}`);
+        token.textContent = `#${tag}`;
+        fragments.push(token);
+      }
+      tagTokens.replaceChildren(...fragments);
+    }
+
+    if (queryBefore === null || queryAfter === null || queryPlaceholder === null) return;
+    const value = queryValue();
+    const offset = caret.kind === "query" ? caret.offset : value.length;
+    queryBefore.textContent = value.slice(0, offset);
+    queryAfter.replaceChildren(...[
+      ...(caret.kind === "query" ? [cursor()] : []),
+      document.createTextNode(value.slice(offset)),
+    ]);
+    queryPlaceholder.toggleAttribute("hidden", value !== "");
   };
 
   const updateSuggestions = () => {
@@ -90,9 +136,15 @@ const { tags } = Astro.props;
     else search?.setAttribute("aria-activedescendant", activeOption.id);
   };
 
-  const applyFilters = () => {
+  const titleQueryForFilter = () => {
     const tagSearch = currentTagSearch();
-    const query = normalize(tagSearch === null ? search?.value ?? "" : (search?.value ?? "").slice(0, tagSearch.hashIndex));
+    const value = queryValue();
+    if (tagSearch === null) return value;
+    return value.slice(0, tagSearch.hashIndex) + value.slice(tagSearch.endIndex);
+  };
+
+  const applyFilters = () => {
+    const query = normalize(titleQueryForFilter());
     let visibleCount = 0;
 
     for (const row of rows) {
@@ -108,42 +160,219 @@ const { tags } = Astro.props;
     noMatch?.toggleAttribute("hidden", visibleCount !== 0);
   };
 
+  const render = () => {
+    renderCaret();
+    applyFilters();
+    updateSuggestions();
+  };
+
+  const setQueryCaret = (offset: number) => {
+    const value = queryValue();
+    caret = { kind: "query", offset: Math.max(0, Math.min(offset, value.length)) };
+    search?.setSelectionRange(caret.offset, caret.offset);
+    render();
+  };
+
+  const setTokenCaret = (boundary: number) => {
+    caret = { kind: "token", boundary: Math.max(0, Math.min(boundary, selectedTags.length)) };
+    search?.setSelectionRange(0, 0);
+    search?.focus();
+    render();
+  };
+
+  const appendToQuery = (text: string) => {
+    if (search === null || text === "") return;
+    search.value += text;
+    caret = { kind: "query", offset: search.value.length };
+    activeSuggestion = -1;
+    suggestionsDismissed = false;
+    search.setSelectionRange(caret.offset, caret.offset);
+    render();
+  };
+
   const selectTag = (tag: string) => {
     if (selectedTags.includes(tag)) return;
     const tagSearch = currentTagSearch();
-    if (tagSearch === null) return;
+    if (tagSearch === null || search === null) return;
+    search.value = search.value.slice(0, tagSearch.hashIndex) + search.value.slice(tagSearch.endIndex);
     selectedTags = [...selectedTags, tag];
-    if (search !== null) search.value = search.value.slice(0, tagSearch.hashIndex);
+    caret = { kind: "token", boundary: selectedTags.length };
     activeSuggestion = -1;
     suggestionsDismissed = false;
-    renderTokens();
-    applyFilters();
-    updateSuggestions();
-    search?.focus();
+    search.setSelectionRange(0, 0);
+    search.focus();
+    render();
+  };
+
+  const deleteBackwards = () => {
+    if (caret.kind === "token") {
+      if (caret.boundary === 0) return;
+      selectedTags.splice(caret.boundary - 1, 1);
+      caret = { kind: "token", boundary: caret.boundary - 1 };
+    } else if (caret.offset === 0 && selectedTags.length > 0) {
+      selectedTags.pop();
+      caret = { kind: "token", boundary: selectedTags.length };
+    } else {
+      return;
+    }
+    activeSuggestion = -1;
+    suggestionsDismissed = false;
+    render();
+  };
+
+  const deleteForwards = () => {
+    if (search === null) return;
+    if (caret.kind === "token") {
+      if (caret.boundary < selectedTags.length) {
+        selectedTags.splice(caret.boundary, 1);
+      } else if (search.value !== "") {
+        search.value = search.value.slice(1);
+        caret = { kind: "query", offset: 0 };
+      } else {
+        return;
+      }
+    } else {
+      return;
+    }
+    activeSuggestion = -1;
+    suggestionsDismissed = false;
+    render();
   };
 
   for (const option of suggestionOptions) {
     option.addEventListener("click", () => selectTag(option.dataset.tag ?? ""));
   }
 
-  search?.addEventListener("input", () => {
+  tagTokens?.addEventListener("pointerdown", (event) => {
+    const token = (event.target as Element).closest<HTMLElement>("[data-tag-token]");
+    if (token === null) return;
+    event.preventDefault();
+    const tokenIndex = selectedTags.indexOf(token.dataset.tagToken ?? "");
+    if (tokenIndex < 0) return;
+    const bounds = token.getBoundingClientRect();
+    setTokenCaret(event.clientX < bounds.left + bounds.width / 2 ? tokenIndex : tokenIndex + 1);
+  });
+
+  search?.addEventListener("focus", () => {
+    prompt?.toggleAttribute("data-notes-filter-focused", true);
+    if (caret.kind === "token") render();
+  });
+
+  search?.addEventListener("blur", () => {
+    prompt?.removeAttribute("data-notes-filter-focused");
+  });
+
+  search?.addEventListener("pointerdown", () => {
+    caret = { kind: "query", offset: search.selectionStart ?? 0 };
+  });
+
+  document.addEventListener("selectionchange", () => {
+    if (document.activeElement !== search || caret.kind !== "query") return;
+    caret = { kind: "query", offset: search?.selectionStart ?? 0 };
+    render();
+  });
+
+  search?.addEventListener("compositionstart", () => {
+    isComposing = true;
+    if (caret.kind === "token") setQueryCaret(queryValue().length);
+  });
+
+  search?.addEventListener("compositionend", () => {
+    isComposing = false;
+    caret = { kind: "query", offset: search.selectionStart ?? search.value.length };
     activeSuggestion = -1;
     suggestionsDismissed = false;
-    applyFilters();
-    updateSuggestions();
+    render();
+  });
+
+  search?.addEventListener("beforeinput", (event) => {
+    if (isComposing || caret.kind !== "token") return;
+    if (!event.inputType.startsWith("insert") || event.data === null) return;
+    event.preventDefault();
+    appendToQuery(event.data);
+  });
+
+  search?.addEventListener("paste", (event) => {
+    if (caret.kind !== "token") return;
+    const text = event.clipboardData?.getData("text") ?? "";
+    event.preventDefault();
+    appendToQuery(text);
+  });
+
+  search?.addEventListener("input", () => {
+    if (isComposing) return;
+    caret = { kind: "query", offset: search.selectionStart ?? search.value.length };
+    activeSuggestion = -1;
+    suggestionsDismissed = false;
+    render();
   });
 
   search?.addEventListener("keydown", (event) => {
+    if (isComposing) return;
     const available = availableSuggestions();
     const suggestionsOpen = suggestionList?.hidden === false;
 
-    if (event.key === "Backspace" && search.value === "" && search.selectionStart === 0 && search.selectionEnd === 0 && selectedTags.length > 0) {
-      event.preventDefault();
-      selectedTags = selectedTags.slice(0, -1);
-      renderTokens();
-      applyFilters();
-      updateSuggestions();
-      return;
+    if (caret.kind === "token") {
+      if (event.key === "ArrowLeft" && caret.boundary > 0) {
+        event.preventDefault();
+        setTokenCaret(caret.boundary - 1);
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        if (caret.boundary < selectedTags.length) setTokenCaret(caret.boundary + 1);
+        else setQueryCaret(0);
+        return;
+      }
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        deleteBackwards();
+        return;
+      }
+      if (event.key === "Delete") {
+        event.preventDefault();
+        deleteForwards();
+        return;
+      }
+    } else {
+      const selectionEnd = search.selectionEnd ?? caret.offset;
+      const hasCollapsedSelection = selectionEnd === caret.offset;
+      if (event.key === "ArrowLeft" && hasCollapsedSelection && caret.offset > 0) {
+        event.preventDefault();
+        setQueryCaret(caret.offset - 1);
+        return;
+      }
+      if (event.key === "ArrowLeft" && hasCollapsedSelection && caret.offset === 0 && selectedTags.length > 0) {
+        event.preventDefault();
+        setTokenCaret(selectedTags.length);
+        return;
+      }
+      if (event.key === "ArrowRight" && hasCollapsedSelection && caret.offset < search.value.length) {
+        event.preventDefault();
+        setQueryCaret(caret.offset + 1);
+        return;
+      }
+      if (event.key === "Backspace" && hasCollapsedSelection && caret.offset > 0) {
+        event.preventDefault();
+        search.value = search.value.slice(0, caret.offset - 1) + search.value.slice(caret.offset);
+        activeSuggestion = -1;
+        suggestionsDismissed = false;
+        setQueryCaret(caret.offset - 1);
+        return;
+      }
+      if (event.key === "Backspace" && hasCollapsedSelection && caret.offset === 0 && selectedTags.length > 0) {
+        event.preventDefault();
+        deleteBackwards();
+        return;
+      }
+      if (event.key === "Delete" && hasCollapsedSelection && caret.offset < search.value.length) {
+        event.preventDefault();
+        search.value = search.value.slice(0, caret.offset) + search.value.slice(caret.offset + 1);
+        activeSuggestion = -1;
+        suggestionsDismissed = false;
+        setQueryCaret(caret.offset);
+        return;
+      }
     }
 
     if (!suggestionsOpen || available.length === 0) return;
@@ -161,4 +390,7 @@ const { tags } = Astro.props;
       updateSuggestions();
     }
   });
+
+  render();
+  requestAnimationFrame(() => prompt?.toggleAttribute("data-notes-filter-focused", document.activeElement === search));
 </script>

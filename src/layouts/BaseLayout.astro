@@ -352,17 +352,22 @@ const { title } = Astro.props;
   .notes-summary dt { color: #888e85; }
   .notes-summary dd { margin: 0; color: #dce1d5; }
   .notes-filter-prompt { margin: 0 0 1.25rem; }
-  .notes-filter-prompt-line { display: flex; align-items: center; gap: .55rem; min-width: 0; color: #aeb5a8; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-filter-prompt-line { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .55rem; min-width: 0; color: #aeb5a8; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
   .notes-filter-command, .notes-filter-pipe { flex: none; white-space: nowrap; }
   .notes-filter-command i { color: var(--accent); font-style: normal; }
   .notes-filter-pipe { color: var(--accent); }
-  .notes-token-query { display: flex; flex: 1 1 12rem; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 0; }
-  .notes-tag-tokens { display: inline-flex; flex-wrap: wrap; gap: .35rem; min-width: 0; }
-  .notes-tag-token { padding: .18rem .4rem; border: 1px solid rgba(178,247,155,.48); border-radius: .2rem; color: var(--accent-strong); background: rgba(178,247,155,.09); white-space: nowrap; }
-  .notes-token-query input { flex: 0 1 auto; width: auto; min-width: 12ch; max-width: 100%; min-height: 1.6rem; padding: 0; border: 0; outline: 0; appearance: none; field-sizing: content; color: #eff3e9; caret-color: transparent; background: transparent; font: inherit; }
+  .notes-token-query { display: flex; flex: 1 1 12rem; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 12ch; }
+  .notes-tag-tokens { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 0; }
+  .notes-tag-token { appearance: none; padding: .18rem .4rem; border: 1px solid rgba(178,247,155,.48); border-radius: .2rem; color: var(--accent-strong); background: rgba(178,247,155,.09); font: inherit; white-space: nowrap; cursor: text; }
+  .notes-title-query-editor { position: relative; display: inline-grid; flex: 1 1 12ch; min-width: 12ch; max-width: 100%; min-height: 1.6rem; }
+  .notes-query-display { display: block; grid-area: 1 / 1; min-width: 12ch; overflow: hidden; color: #eff3e9; white-space: pre; pointer-events: none; }
+  .notes-query-placeholder { color: #737970; }
+  .notes-query-placeholder[hidden] { display: none; }
+  .notes-token-query input { grid-area: 1 / 1; z-index: 1; width: 100%; min-width: 0; min-height: 1.6rem; padding: 0; border: 0; outline: 0; appearance: none; color: transparent; caret-color: transparent; background: transparent; font: inherit; }
+  .notes-token-query input::selection { color: transparent; background: transparent; }
   .notes-token-query input:focus { outline: 0; }
-  .notes-token-query input::placeholder { color: #737970; }
-  .notes-filter-cursor { width: .62ch; height: 1.2em; margin-left: -.18rem; background: var(--accent-strong); box-shadow: 0 0 .75rem rgba(178,247,155,.65); animation: notes-filter-cursor-blink 1s steps(1, end) infinite; }
+  .notes-filter-cursor { display: inline-block; width: .62ch; height: 1.2em; margin: 0 -.08ch; vertical-align: -.2em; background: var(--accent-strong); box-shadow: 0 0 .75rem rgba(178,247,155,.65); opacity: .42; }
+  [data-notes-filter-focused] .notes-filter-cursor { opacity: 1; animation: notes-filter-cursor-blink 1s steps(1, end) infinite; }
   .notes-tag-suggestions { display: grid; gap: .15rem; max-width: 28rem; margin: .4rem 0 0; padding: .35rem; border: 1px solid #3c443a; border-radius: .25rem; list-style: none; background: #1a1c1a; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
   .notes-tag-suggestions[hidden] { display: none; }
   .notes-tag-suggestions [role="option"] { padding: .42rem .5rem; border-radius: .16rem; color: #c8cec1; cursor: pointer; }
@@ -406,6 +411,7 @@ const { title } = Astro.props;
 
   @media (prefers-reduced-motion: reduce) {
     .terminal-window, .terminal-status span, .notes-filter-cursor { animation: none; }
+    [data-notes-filter-focused] .notes-filter-cursor { animation: none; }
     .profile-links a, .link-marker, .link-label, .terminal-footer-link, .note-row { transition: none; }
   }
 </style>

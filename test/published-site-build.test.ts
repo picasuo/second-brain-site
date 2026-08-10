@@ -103,6 +103,8 @@ test("a Notes Index renders a local filter prompt, static terminal output, Canon
   expect(notesIndex).toContain('autofocus');
   expect(notesIndex).toContain('role="combobox"');
   expect(notesIndex).toContain('aria-autocomplete="list"');
+  expect(notesIndex).toContain('data-notes-title-query-editor');
+  expect(notesIndex).toContain('data-notes-query-display');
   expect(notesIndex).toContain('data-notes-filter-cursor');
   expect(notesIndex).toContain('role="listbox"');
   expect(notesIndex).toContain('role="option"');
