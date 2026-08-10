@@ -296,7 +296,6 @@ const { tags } = Astro.props;
   });
 
   search?.addEventListener("paste", (event) => {
-    if (caret.kind !== "token") return;
     const text = event.clipboardData?.getData("text") ?? "";
     event.preventDefault();
     appendToQuery(text);
