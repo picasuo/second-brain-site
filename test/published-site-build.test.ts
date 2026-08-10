@@ -80,7 +80,7 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
   expect(alphaNote).not.toContain('href="/tags/"');
 });
 
-test("a Notes Index exposes the published count, latest date, filter data, and terminal navigation", async () => {
+test("a Notes Index renders terminal output, a title query, Canonical Tags, and terminal navigation", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);
 
@@ -91,12 +91,20 @@ test("a Notes Index exposes the published count, latest date, filter data, and t
 
   const notesIndex = await readFile(join(outputDirectory, "notes", "index.html"), "utf8");
 
-  expect(notesIndex).toContain("total 3 篇");
-  expect(notesIndex).toContain("latest 2026-08-05");
-  expect(notesIndex).toContain("--all");
-  expect(notesIndex.indexOf("--all")).toBeLessThan(notesIndex.indexOf('data-tag="运维"'));
+  expect(notesIndex).toContain("notes --info");
+  expect(notesIndex).toContain("<dt>total</dt>");
+  expect(notesIndex).toContain("<dd>3</dd>");
+  expect(notesIndex).toContain("<dt>latest</dt>");
+  expect(notesIndex).toContain("<dd>2026-08-05</dd>");
+  expect(notesIndex).toContain("ls -la ./notes --sort=date");
+  expect(notesIndex).toContain("grep -i");
+  expect(notesIndex).toContain('data-notes-search');
+  expect(notesIndex).not.toContain("--all");
+  expect(notesIndex).not.toContain('<h1 id="notes-title">Notes</h1>');
   expect(notesIndex).toContain('data-note-title="latest-note"');
   expect(notesIndex).toContain("data-note-tags=");
+  expect(notesIndex).toContain("#engineering");
+  expect(notesIndex).toContain("#运维");
   expect(notesIndex).toContain('href="/notes/latest-note/"');
   expect(notesIndex).toContain("← Back to home");
   expect(notesIndex).not.toContain("READ");
@@ -112,9 +120,14 @@ test("an empty Publish Set renders its confirmed zero-note state without filters
 
   const notesIndex = await readFile(join(outputDirectory, "notes", "index.html"), "utf8");
 
-  expect(notesIndex).toContain("total 0 篇");
-  expect(notesIndex).toContain("latest —");
+  expect(notesIndex).toContain("notes --info");
+  expect(notesIndex).toContain("<dt>total</dt>");
+  expect(notesIndex).toContain("<dd>0</dd>");
+  expect(notesIndex).toContain("<dt>latest</dt>");
+  expect(notesIndex).toContain("<dd>—</dd>");
   expect(notesIndex).toContain("notes: no published notes");
+  expect(notesIndex).not.toContain("ls -la ./notes --sort=date");
+  expect(notesIndex).not.toContain("grep -i");
   expect(notesIndex).not.toContain("--all");
   expect(notesIndex).not.toContain("DATE");
   expect(notesIndex).toContain("← Back to home");

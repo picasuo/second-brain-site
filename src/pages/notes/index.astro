@@ -4,34 +4,32 @@ import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astr
 import TerminalShell from "../../layouts/TerminalShell.astro";
 import { publishedNotes } from "../../generated/published-notes";
 
-const tags = [...new Set(publishedNotes.flatMap((note) => note.tags))]
-  .sort((left, right) => left.localeCompare(right, "zh-CN"));
 const latest = publishedNotes.at(0)?.date ?? "—";
 const hasPublishedNotes = publishedNotes.length > 0;
 ---
 
 <BaseLayout title="笔记">
   <TerminalShell ariaLabel="Notes Index" windowTitle="picasuo@github-page:~/notes">
-    <section class="notes-index" aria-labelledby="notes-title">
-      <TerminalCommandDisplay command="ls ~/notes" />
-      <h1 id="notes-title">Notes</h1>
-      <p class="notes-summary" aria-label="Published Note summary">
-        <span>total {publishedNotes.length} 篇</span>
-        <span>latest {latest}</span>
-      </p>
+    <section class="notes-index" aria-label="Notes Index">
+      <TerminalCommandDisplay command="notes --info" />
+      <dl class="notes-summary" aria-label="Published Note summary">
+        <div>
+          <dt>total</dt>
+          <dd>{publishedNotes.length}</dd>
+        </div>
+        <div>
+          <dt>latest</dt>
+          <dd>{latest}</dd>
+        </div>
+      </dl>
 
       {hasPublishedNotes ? (
         <>
-          <div class="notes-filters" aria-label="Filter published notes">
-            <div class="tag-filters" aria-label="Filter by tag">
-              <button type="button" class="tag-filter" data-tag-filter data-tag="" aria-pressed="true">--all</button>
-              {tags.map((tag) => <button type="button" class="tag-filter" data-tag-filter data-tag={tag} aria-pressed="false">{tag}</button>)}
-            </div>
-            <label class="notes-search">
-              <span>search</span>
-              <input data-notes-search type="search" autocomplete="off" placeholder="title" />
-            </label>
-          </div>
+          <TerminalCommandDisplay command="ls -la ./notes --sort=date" />
+          <label class="notes-search">
+            <span><i aria-hidden="true">$</i> grep -i</span>
+            <input data-notes-search type="search" autocomplete="off" placeholder="Search titles" aria-label="Search Published Note titles" />
+          </label>
 
           <div class="notes-table" data-notes-table>
             <div class="notes-table-header" aria-hidden="true">
@@ -50,7 +48,7 @@ const hasPublishedNotes = publishedNotes.length > 0;
                   >
                     <time datetime={note.date}>{note.date}</time>
                     <span class="note-row-title">{note.title}</span>
-                    <span class="note-row-tags">{note.tags.length > 0 ? note.tags.join(" · ") : "—"}</span>
+                    <span class="note-row-tags">{note.tags.length > 0 ? note.tags.map((tag) => `#${tag}`).join(" ") : "—"}</span>
                   </a>
                 </li>
               ))}
@@ -68,13 +66,10 @@ const hasPublishedNotes = publishedNotes.length > 0;
 </BaseLayout>
 
 {hasPublishedNotes && <script>
-  const tagFilters = Array.from(document.querySelectorAll<HTMLButtonElement>("[data-tag-filter]"));
   const search = document.querySelector<HTMLInputElement>("[data-notes-search]");
   const rows = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-note-row]"));
   const table = document.querySelector<HTMLElement>("[data-notes-table]");
   const noMatch = document.querySelector<HTMLElement>("[data-no-match]");
-  let selectedTag = "";
-
   const normalize = (value: string) => value.normalize("NFKC").trim().toLocaleLowerCase();
 
   const applyFilters = () => {
@@ -83,9 +78,7 @@ const hasPublishedNotes = publishedNotes.length > 0;
 
     for (const row of rows) {
       const titleMatches = normalize(row.dataset.noteTitle ?? "").includes(query);
-      const tags = JSON.parse(row.dataset.noteTags ?? "[]") as string[];
-      const tagMatches = selectedTag === "" || tags.includes(selectedTag);
-      const visible = titleMatches && tagMatches;
+      const visible = titleMatches;
       row.closest("li")?.toggleAttribute("hidden", !visible);
       if (visible) visibleCount += 1;
     }
@@ -93,14 +86,6 @@ const hasPublishedNotes = publishedNotes.length > 0;
     table?.toggleAttribute("hidden", visibleCount === 0);
     noMatch?.toggleAttribute("hidden", visibleCount !== 0);
   };
-
-  for (const filter of tagFilters) {
-    filter.addEventListener("click", () => {
-      selectedTag = filter.dataset.tag ?? "";
-      tagFilters.forEach((button) => button.setAttribute("aria-pressed", String(button === filter)));
-      applyFilters();
-    });
-  }
 
   search?.addEventListener("input", applyFilters);
 </script>}

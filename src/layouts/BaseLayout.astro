@@ -94,7 +94,6 @@ const { title } = Astro.props;
   }
 
   .home-introduction h1,
-  .notes-index h1,
   .note h1 {
     margin: 0;
     font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
@@ -135,8 +134,6 @@ const { title } = Astro.props;
   .primary-link:active { transform: translateY(1px); }
 
   .notes-index { max-width: 52rem; }
-  .notes-index h1 { font-size: clamp(2.3rem, 5vw, 4.25rem); line-height: 1.08; }
-  .notes-index > p { max-width: 38rem; margin: 1.25rem 0 3.5rem; color: var(--muted); line-height: 1.75; }
 
   .note-list {
     display: grid;
@@ -350,17 +347,14 @@ const { title } = Astro.props;
 
   .notes-index { max-width: 64rem; }
   .notes-index > .terminal-command { margin-bottom: 1.6rem; }
-  .notes-index h1 { margin: 0; color: #f0f2eb; font: 650 clamp(2rem, 5vw, 3.6rem)/1 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; letter-spacing: -.06em; }
-  .notes-summary { display: flex; flex-wrap: wrap; gap: .6rem 1.8rem; margin: 1rem 0 2.3rem; color: #dce1d5; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
-  .notes-summary span::first-letter { color: #888e85; }
-  .notes-filters { display: grid; gap: .85rem; margin-bottom: 1.25rem; }
-  .tag-filters { display: flex; flex-wrap: wrap; gap: .45rem; }
-  .tag-filter { min-height: 2rem; padding: .25rem .58rem; border: 1px solid #3c443a; border-radius: .25rem; color: #aeb5a8; background: transparent; cursor: pointer; font: 650 .75rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease, transform 140ms ease; }
-  .tag-filter:hover, .tag-filter[aria-pressed="true"] { border-color: rgba(178,247,155,.7); color: var(--accent-strong); background: rgba(178,247,155,.09); }
-  .tag-filter:focus-visible { outline: 3px solid var(--accent); outline-offset: .15rem; }
-  .tag-filter:active { transform: translateY(1px); background: rgba(178,247,155,.17); }
-  .notes-search { display: grid; grid-template-columns: 4.8rem minmax(0, 1fr); gap: .75rem; align-items: center; max-width: 28rem; color: #888e85; font: .76rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
-  .notes-search input { width: 100%; min-width: 0; min-height: 2rem; padding: .35rem .55rem; border: 1px solid #3c443a; border-radius: .25rem; color: #eff3e9; background: rgba(255,255,255,.035); font: inherit; }
+  .notes-summary { display: grid; gap: .45rem; margin: 0 0 2.3rem; padding-left: 2ch; font: .8rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-summary div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 1rem; }
+  .notes-summary dt { color: #888e85; }
+  .notes-summary dd { margin: 0; color: #dce1d5; }
+  .notes-search { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: center; margin: 0 0 1.25rem; color: #aeb5a8; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-search > span { white-space: nowrap; }
+  .notes-search i { color: var(--accent); font-style: normal; }
+  .notes-search input { width: 100%; min-width: 0; min-height: 2.25rem; padding: .4rem .6rem; border: 1px solid #3c443a; border-radius: .25rem; color: #eff3e9; background: rgba(255,255,255,.035); font: inherit; }
   .notes-search input::placeholder { color: #737970; }
   .notes-search input:focus { border-color: var(--accent); outline: none; }
   .notes-table { border-top: 1px solid rgba(255,255,255,.16); }
@@ -391,10 +385,7 @@ const { title } = Astro.props;
     .terminal-info div { grid-template-columns: 6.15rem minmax(0, 1fr); gap: .55rem; }
     .profile-links { margin-top: 3.5rem; }
     .notes-summary { margin-bottom: 1.8rem; }
-    .notes-filters { gap: .9rem; }
-    .tag-filters { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .25rem; }
-    .tag-filter { flex: 0 0 auto; }
-    .notes-search { grid-template-columns: 1fr; gap: .4rem; max-width: none; }
+    .notes-search { grid-template-columns: 1fr; gap: .4rem; }
     .notes-table-header { display: none; }
     .notes-table { border-top: 0; }
     .note-list > li:first-child { border-top: 1px solid rgba(255,255,255,.1); }
@@ -404,6 +395,6 @@ const { title } = Astro.props;
 
   @media (prefers-reduced-motion: reduce) {
     .terminal-window, .terminal-status span { animation: none; }
-    .profile-links a, .link-marker, .link-label, .terminal-footer-link, .tag-filter, .note-row { transition: none; }
+    .profile-links a, .link-marker, .link-label, .terminal-footer-link, .note-row { transition: none; }
   }
 </style>
