@@ -80,7 +80,7 @@ test("a Publish Set excludes private notes, orders Published Notes, and exposes 
   expect(alphaNote).not.toContain('href="/tags/"');
 });
 
-test("a Notes Index renders terminal output, a title query, Canonical Tags, and terminal navigation", async () => {
+test("a Notes Index renders a local filter prompt, static terminal output, Canonical Tags, and terminal navigation", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);
 
@@ -96,11 +96,14 @@ test("a Notes Index renders terminal output, a title query, Canonical Tags, and 
   expect(notesIndex).toContain("<dd>3</dd>");
   expect(notesIndex).toContain("<dt>latest</dt>");
   expect(notesIndex).toContain("<dd>2026-08-05</dd>");
+  expect(notesIndex).toContain('data-notes-filter-prompt');
   expect(notesIndex).toContain("ls -la ./notes --sort=date");
   expect(notesIndex).toContain("grep -i");
   expect(notesIndex).toContain('data-notes-search');
+  expect(notesIndex).toContain('autofocus');
   expect(notesIndex).toContain('role="combobox"');
   expect(notesIndex).toContain('aria-autocomplete="list"');
+  expect(notesIndex).toContain('data-notes-filter-cursor');
   expect(notesIndex).toContain('role="listbox"');
   expect(notesIndex).toContain('role="option"');
   expect(notesIndex).not.toContain("--all");

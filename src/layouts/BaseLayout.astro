@@ -351,17 +351,18 @@ const { title } = Astro.props;
   .notes-summary div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: 1rem; }
   .notes-summary dt { color: #888e85; }
   .notes-summary dd { margin: 0; color: #dce1d5; }
-  .notes-query { margin: 0 0 1.25rem; }
-  .notes-search { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem; align-items: center; color: #aeb5a8; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
-  .notes-search > span:first-child { white-space: nowrap; }
-  .notes-search i { color: var(--accent); font-style: normal; }
-  .notes-token-query { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 0; min-height: 2.4rem; padding: .3rem .5rem; border: 1px solid #3c443a; border-radius: .25rem; background: rgba(255,255,255,.035); }
-  .notes-token-query:focus-within { border-color: var(--accent); }
+  .notes-filter-prompt { margin: 0 0 1.25rem; }
+  .notes-filter-prompt-line { display: flex; align-items: center; gap: .55rem; min-width: 0; color: #aeb5a8; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .notes-filter-command, .notes-filter-pipe { flex: none; white-space: nowrap; }
+  .notes-filter-command i { color: var(--accent); font-style: normal; }
+  .notes-filter-pipe { color: var(--accent); }
+  .notes-token-query { display: flex; flex: 1 1 12rem; flex-wrap: wrap; align-items: center; gap: .35rem; min-width: 0; }
   .notes-tag-tokens { display: inline-flex; flex-wrap: wrap; gap: .35rem; min-width: 0; }
   .notes-tag-token { padding: .18rem .4rem; border: 1px solid rgba(178,247,155,.48); border-radius: .2rem; color: var(--accent-strong); background: rgba(178,247,155,.09); white-space: nowrap; }
-  .notes-search input { flex: 1 1 11rem; width: 100%; min-width: 0; min-height: 1.6rem; padding: 0; border: 0; outline: 0; color: #eff3e9; caret-color: var(--accent-strong); background: transparent; font: inherit; }
-  .notes-search input:focus { outline: 0; }
-  .notes-search input::placeholder { color: #737970; }
+  .notes-token-query input { flex: 0 1 auto; width: auto; min-width: 12ch; max-width: 100%; min-height: 1.6rem; padding: 0; border: 0; outline: 0; appearance: none; field-sizing: content; color: #eff3e9; caret-color: transparent; background: transparent; font: inherit; }
+  .notes-token-query input:focus { outline: 0; }
+  .notes-token-query input::placeholder { color: #737970; }
+  .notes-filter-cursor { width: .62ch; height: 1.2em; margin-left: -.18rem; background: var(--accent-strong); box-shadow: 0 0 .75rem rgba(178,247,155,.65); animation: notes-filter-cursor-blink 1s steps(1, end) infinite; }
   .notes-tag-suggestions { display: grid; gap: .15rem; max-width: 28rem; margin: .4rem 0 0; padding: .35rem; border: 1px solid #3c443a; border-radius: .25rem; list-style: none; background: #1a1c1a; font: .78rem ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
   .notes-tag-suggestions[hidden] { display: none; }
   .notes-tag-suggestions [role="option"] { padding: .42rem .5rem; border-radius: .16rem; color: #c8cec1; cursor: pointer; }
@@ -384,6 +385,7 @@ const { title } = Astro.props;
 
   @keyframes terminal-enter { from { opacity: 0; transform: translateY(1.5rem) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes status-pulse { 50% { opacity: .4; box-shadow: 0 0 .2rem rgba(178,247,155,.3); } }
+  @keyframes notes-filter-cursor-blink { 50% { opacity: 0; } }
 
   @media (max-width: 43rem) {
     .terminal-shell { padding: clamp(1.5rem, 4dvh, 3rem) .75rem; }
@@ -394,7 +396,6 @@ const { title } = Astro.props;
     .terminal-info div { grid-template-columns: 6.15rem minmax(0, 1fr); gap: .55rem; }
     .profile-links { margin-top: 3.5rem; }
     .notes-summary { margin-bottom: 1.8rem; }
-    .notes-search { grid-template-columns: 1fr; gap: .4rem; }
     .notes-tag-suggestions { max-width: none; }
     .notes-table-header { display: none; }
     .notes-table { border-top: 0; }
@@ -404,7 +405,7 @@ const { title } = Astro.props;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .terminal-window, .terminal-status span { animation: none; }
+    .terminal-window, .terminal-status span, .notes-filter-cursor { animation: none; }
     .profile-links a, .link-marker, .link-label, .terminal-footer-link, .note-row { transition: none; }
   }
 </style>
