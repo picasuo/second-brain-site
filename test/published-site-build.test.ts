@@ -97,9 +97,11 @@ test("a Notes Index renders a local filter prompt, static terminal output, Canon
   expect(notesIndex).toContain("<dt>latest</dt>");
   expect(notesIndex).toContain("<dd>2026-08-05</dd>");
   expect(notesIndex).toContain('data-notes-filter-prompt');
+  expect(notesIndex).toContain('data-notes-filter-static-command');
   expect(notesIndex).toContain("ls -la ./notes --sort=date");
   expect(notesIndex).toContain("grep -i");
   expect(notesIndex).toContain('data-notes-search');
+  expect(notesIndex).toContain('<textarea');
   expect(notesIndex).toContain('autofocus');
   expect(notesIndex).toContain('role="combobox"');
   expect(notesIndex).toContain('aria-autocomplete="list"');

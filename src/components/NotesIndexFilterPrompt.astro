@@ -8,27 +8,26 @@ const { tags } = Astro.props;
 
 <section class="notes-filter-prompt" data-notes-filter-prompt aria-label="Notes Index Filter Prompt">
   <div class="notes-filter-prompt-line" role="group" aria-label="Notes Index Filter Prompt">
-    <span class="notes-filter-command"><i aria-hidden="true">$</i> ls -la ./notes --sort=date</span>
-    <span class="notes-filter-pipe" aria-hidden="true">|</span>
-    <span class="notes-filter-command">grep -i</span>
+    <span class="notes-filter-static-command" data-notes-filter-static-command>
+      <span class="notes-filter-command"><i aria-hidden="true">$</i> ls -la ./notes --sort=date</span>
+      <span class="notes-filter-pipe" aria-hidden="true">|</span>
+      <span class="notes-filter-command">grep -i</span>
+    </span>
     <span class="notes-token-query" data-token-query>
       <span class="notes-tag-tokens" data-tag-tokens aria-live="polite"></span>
       <span class="notes-title-query-editor" data-notes-title-query-editor>
-        <input
+        <textarea
           data-notes-search
-          type="search"
           autocomplete="off"
           aria-label="Filter Published Notes by tag or title"
           role="combobox"
           aria-autocomplete="list"
           aria-controls="notes-tag-suggestions"
           aria-expanded="false"
+          rows="1"
           autofocus
-        />
-        <span class="notes-query-display" data-notes-query-display aria-hidden="true">
-          <span data-notes-query-before></span><span data-notes-query-after><span class="notes-filter-cursor" data-notes-filter-cursor aria-hidden="true"></span></span>
-          <span class="notes-query-placeholder" data-notes-query-placeholder># filters tags · search titles</span>
-        </span>
+        ></textarea>
+        <span class="notes-query-display" data-notes-query-display aria-hidden="true"><span data-notes-query-before></span><span data-notes-query-after><span class="notes-filter-cursor" data-notes-filter-cursor aria-hidden="true"></span></span><span class="notes-query-placeholder" data-notes-query-placeholder># filters tags · search titles</span></span>
       </span>
     </span>
   </div>
@@ -41,8 +40,10 @@ const { tags } = Astro.props;
   type Caret = { kind: "token"; boundary: number } | { kind: "query"; offset: number };
 
   const prompt = document.querySelector<HTMLElement>("[data-notes-filter-prompt]");
-  const search = document.querySelector<HTMLInputElement>("[data-notes-search]");
+  const search = document.querySelector<HTMLTextAreaElement>("[data-notes-search]");
   const tagTokens = document.querySelector<HTMLElement>("[data-tag-tokens]");
+  const tokenQuery = document.querySelector<HTMLElement>("[data-token-query]");
+  const queryDisplay = document.querySelector<HTMLElement>("[data-notes-query-display]");
   const queryBefore = document.querySelector<HTMLElement>("[data-notes-query-before]");
   const queryAfter = document.querySelector<HTMLElement>("[data-notes-query-after]");
   const queryPlaceholder = document.querySelector<HTMLElement>("[data-notes-query-placeholder]");
@@ -163,10 +164,22 @@ const { tags } = Astro.props;
     noMatch?.toggleAttribute("hidden", visibleCount !== 0);
   };
 
+  const updateQueryWrapping = () => {
+    if (tokenQuery === null || queryDisplay === null) return;
+    tokenQuery.removeAttribute("data-notes-query-wraps");
+
+    const previousWhiteSpace = queryDisplay.style.whiteSpace;
+    queryDisplay.style.whiteSpace = "pre";
+    const wraps = queryDisplay.scrollWidth > queryDisplay.clientWidth;
+    queryDisplay.style.whiteSpace = previousWhiteSpace;
+    tokenQuery.toggleAttribute("data-notes-query-wraps", wraps);
+  };
+
   const render = () => {
     renderCaret();
     applyFilters();
     updateSuggestions();
+    updateQueryWrapping();
   };
 
   const setQueryCaret = (offset: number) => {
@@ -314,6 +327,11 @@ const { tags } = Astro.props;
     const available = availableSuggestions();
     const suggestionsOpen = suggestionList?.hidden === false;
 
+    if (event.key === "Enter" && (!suggestionsOpen || available.length === 0)) {
+      event.preventDefault();
+      return;
+    }
+
     if (caret.kind === "token") {
       if (event.key === "ArrowLeft" && caret.boundary > 0) {
         event.preventDefault();
@@ -394,5 +412,6 @@ const { tags } = Astro.props;
   });
 
   render();
+  window.addEventListener("resize", updateQueryWrapping);
   requestAnimationFrame(() => prompt?.toggleAttribute("data-notes-filter-focused", document.activeElement === search));
 </script>

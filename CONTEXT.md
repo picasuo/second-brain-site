@@ -104,9 +104,21 @@ _Avoid_: 全局导航栏、站点范围菜单
 终端拟态中用于展示上下文或命令的静态文本；它不承担导航、筛选或其他点击交互。
 _Avoid_: 链接、按钮、可点击命令
 
+**Notes Index Filter Prompt**:
+Notes Index 中将已排序的 Published Note 列表与浏览器本地筛选衔接的交互式终端提示符；它以 `$ ls -la ./notes --sort=date | grep -i` 表示筛选上下文，并承载 Tag Token、标题查询、建议和输入反馈。静态管道命令与可编辑区域是完整的两个换行单元：空间不足时，可编辑区域从提示符左缘续行，不拆散或重排静态命令；过长的 Placeholder 或标题查询也会移至完整 Prompt 行并从左缘自动续行。查询区域不呈现传统输入框外观，页面进入时获得焦点并展示醒目的块状闪烁光标；减少动态效果时光标保持静态。
+_Avoid_: Terminal Command Display、可提交的 Shell、服务端查询
+
 **Notes Index Filter**:
-`/notes/` 中仅在浏览器内运行的 Published Note 筛选器：一个 Canonical Tag 与不区分大小写的标题搜索可同时使用，并取两者交集；它不查询正文或私密内容，也不进入 URL，页面重新进入时恢复默认状态。
+`/notes/` 中仅在浏览器内运行的 Published Note 筛选器：零个或多个 Canonical Tag 与不区分大小写的标题搜索可同时使用；每篇结果必须命中全部 Tag Token 并匹配标题查询。它不查询正文或私密内容，也不进入 URL，页面重新进入时恢复默认状态。
 _Avoid_: 全文搜索、服务端搜索、标签页
+
+**Tag Token**:
+Notes Index Filter 输入区域中表示一个已选 Canonical Tag 的可编辑令牌；它与查询文本处于同一编辑顺序，光标位于令牌后按 Backspace 会移除该令牌。
+_Avoid_: 独立筛选按钮、不可编辑标签
+
+**Tag Suggestion List**:
+当 Notes Index Filter 查询以 `#` 开头时出现的 Canonical Tag 候选列表；可通过鼠标或方向键、Enter 选择，并用 Esc 关闭，已选标签不可重复选择。
+_Avoid_: 全文搜索结果、固定标签栏
 
 **Search Index**:
 未来可用于站点全文搜索的构建期索引，可包含 Published Note 的标题、正文和 Canonical Tag；它不同于 Notes Index Filter。
