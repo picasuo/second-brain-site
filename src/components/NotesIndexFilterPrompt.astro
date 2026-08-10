@@ -69,7 +69,10 @@ const { tags } = Astro.props;
     const match = beforeCaret.match(/(?:^|\s)#([^\s]*)$/u);
     if (match === null) return null;
     const hashIndex = beforeCaret.lastIndexOf("#");
-    return { fragment: normalize(match[1]), hashIndex, endIndex: offset };
+    const afterCaret = value.slice(offset);
+    const nextWhitespace = afterCaret.search(/\s/u);
+    const endIndex = nextWhitespace < 0 ? value.length : offset + nextWhitespace;
+    return { fragment: normalize(match[1]), hashIndex, endIndex };
   };
 
   const availableSuggestions = () => {
