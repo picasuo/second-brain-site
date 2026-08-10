@@ -4,6 +4,8 @@ import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astr
 import TerminalShell from "../../layouts/TerminalShell.astro";
 import { publishedNotes } from "../../generated/published-notes";
 
+const tags = [...new Set(publishedNotes.flatMap((note) => note.tags))]
+  .sort((left, right) => left.localeCompare(right, "zh-CN"));
 const latest = publishedNotes.at(0)?.date ?? "—";
 const hasPublishedNotes = publishedNotes.length > 0;
 ---
@@ -26,10 +28,28 @@ const hasPublishedNotes = publishedNotes.length > 0;
       {hasPublishedNotes ? (
         <>
           <TerminalCommandDisplay command="ls -la ./notes --sort=date" />
-          <label class="notes-search">
-            <span><i aria-hidden="true">$</i> grep -i</span>
-            <input data-notes-search type="search" autocomplete="off" placeholder="Search titles" aria-label="Search Published Note titles" />
-          </label>
+          <div class="notes-query">
+            <label class="notes-search">
+              <span><i aria-hidden="true">$</i> grep -i</span>
+              <span class="notes-token-query" data-token-query>
+                <span class="notes-tag-tokens" data-tag-tokens aria-live="polite"></span>
+                <input
+                  data-notes-search
+                  type="search"
+                  autocomplete="off"
+                  placeholder="# filters tags · search titles"
+                  aria-label="Filter Published Notes by tag or title"
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-controls="notes-tag-suggestions"
+                  aria-expanded="false"
+                />
+              </span>
+            </label>
+            <ul id="notes-tag-suggestions" class="notes-tag-suggestions" data-tag-suggestions role="listbox" aria-label="Canonical Tag suggestions" hidden>
+              {tags.map((tag, index) => <li id={`notes-tag-option-${index}`} role="option" data-tag-suggestion data-tag={tag} aria-selected="false">#{tag}</li>)}
+            </ul>
+          </div>
 
           <div class="notes-table" data-notes-table>
             <div class="notes-table-header" aria-hidden="true">
@@ -67,18 +87,71 @@ const hasPublishedNotes = publishedNotes.length > 0;
 
 {hasPublishedNotes && <script>
   const search = document.querySelector<HTMLInputElement>("[data-notes-search]");
+  const tagTokens = document.querySelector<HTMLElement>("[data-tag-tokens]");
+  const suggestionList = document.querySelector<HTMLElement>("[data-tag-suggestions]");
+  const suggestionOptions = Array.from(document.querySelectorAll<HTMLElement>("[data-tag-suggestion]"));
   const rows = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-note-row]"));
   const table = document.querySelector<HTMLElement>("[data-notes-table]");
   const noMatch = document.querySelector<HTMLElement>("[data-no-match]");
   const normalize = (value: string) => value.normalize("NFKC").trim().toLocaleLowerCase();
+  let selectedTags: string[] = [];
+  let activeSuggestion = -1;
+  let suggestionsDismissed = false;
+
+  const currentTagSearch = () => {
+    const value = search?.value ?? "";
+    const match = value.match(/(?:^|\s)#([^\s]*)$/u);
+    if (match === null) return null;
+    return { fragment: normalize(match[1]), hashIndex: value.lastIndexOf("#") };
+  };
+
+  const availableSuggestions = () => {
+    const tagSearch = currentTagSearch();
+    if (tagSearch === null) return [];
+    return suggestionOptions.filter((option) => {
+      const tag = option.dataset.tag ?? "";
+      return !selectedTags.includes(tag) && normalize(tag).includes(tagSearch.fragment);
+    });
+  };
+
+  const renderTokens = () => {
+    if (tagTokens === null) return;
+    tagTokens.replaceChildren(...selectedTags.map((tag) => {
+      const token = document.createElement("span");
+      token.className = "notes-tag-token";
+      token.textContent = `#${tag}`;
+      return token;
+    }));
+  };
+
+  const updateSuggestions = () => {
+    const available = availableSuggestions();
+    const showSuggestions = currentTagSearch() !== null && !suggestionsDismissed && available.length > 0;
+    if (activeSuggestion < 0 || activeSuggestion >= available.length) activeSuggestion = 0;
+
+    for (const option of suggestionOptions) {
+      const index = available.indexOf(option);
+      option.toggleAttribute("hidden", !showSuggestions || index < 0);
+      option.setAttribute("aria-selected", String(showSuggestions && index === activeSuggestion));
+    }
+
+    suggestionList?.toggleAttribute("hidden", !showSuggestions);
+    search?.setAttribute("aria-expanded", String(showSuggestions));
+    const activeOption = showSuggestions ? available[activeSuggestion] : undefined;
+    if (activeOption === undefined) search?.removeAttribute("aria-activedescendant");
+    else search?.setAttribute("aria-activedescendant", activeOption.id);
+  };
 
   const applyFilters = () => {
-    const query = normalize(search?.value ?? "");
+    const tagSearch = currentTagSearch();
+    const query = normalize(tagSearch === null ? search?.value ?? "" : (search?.value ?? "").slice(0, tagSearch.hashIndex));
     let visibleCount = 0;
 
     for (const row of rows) {
       const titleMatches = normalize(row.dataset.noteTitle ?? "").includes(query);
-      const visible = titleMatches;
+      const tags = JSON.parse(row.dataset.noteTags ?? "[]") as string[];
+      const tagsMatch = selectedTags.every((tag) => tags.includes(tag));
+      const visible = titleMatches && tagsMatch;
       row.closest("li")?.toggleAttribute("hidden", !visible);
       if (visible) visibleCount += 1;
     }
@@ -87,5 +160,57 @@ const hasPublishedNotes = publishedNotes.length > 0;
     noMatch?.toggleAttribute("hidden", visibleCount !== 0);
   };
 
-  search?.addEventListener("input", applyFilters);
+  const selectTag = (tag: string) => {
+    if (selectedTags.includes(tag)) return;
+    const tagSearch = currentTagSearch();
+    if (tagSearch === null) return;
+    selectedTags = [...selectedTags, tag];
+    if (search !== null) search.value = search.value.slice(0, tagSearch.hashIndex);
+    activeSuggestion = -1;
+    suggestionsDismissed = false;
+    renderTokens();
+    applyFilters();
+    updateSuggestions();
+    search?.focus();
+  };
+
+  for (const option of suggestionOptions) {
+    option.addEventListener("click", () => selectTag(option.dataset.tag ?? ""));
+  }
+
+  search?.addEventListener("input", () => {
+    activeSuggestion = -1;
+    suggestionsDismissed = false;
+    applyFilters();
+    updateSuggestions();
+  });
+
+  search?.addEventListener("keydown", (event) => {
+    const available = availableSuggestions();
+    const suggestionsOpen = suggestionList?.hidden === false;
+
+    if (event.key === "Backspace" && search.value === "" && search.selectionStart === 0 && search.selectionEnd === 0 && selectedTags.length > 0) {
+      event.preventDefault();
+      selectedTags = selectedTags.slice(0, -1);
+      renderTokens();
+      applyFilters();
+      updateSuggestions();
+      return;
+    }
+
+    if (!suggestionsOpen || available.length === 0) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      activeSuggestion = (activeSuggestion + direction + available.length) % available.length;
+      updateSuggestions();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      selectTag(available[activeSuggestion]?.dataset.tag ?? "");
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      suggestionsDismissed = true;
+      updateSuggestions();
+    }
+  });
 </script>}

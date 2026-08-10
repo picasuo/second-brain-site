@@ -99,12 +99,17 @@ test("a Notes Index renders terminal output, a title query, Canonical Tags, and 
   expect(notesIndex).toContain("ls -la ./notes --sort=date");
   expect(notesIndex).toContain("grep -i");
   expect(notesIndex).toContain('data-notes-search');
+  expect(notesIndex).toContain('role="combobox"');
+  expect(notesIndex).toContain('aria-autocomplete="list"');
+  expect(notesIndex).toContain('role="listbox"');
+  expect(notesIndex).toContain('role="option"');
   expect(notesIndex).not.toContain("--all");
   expect(notesIndex).not.toContain('<h1 id="notes-title">Notes</h1>');
   expect(notesIndex).toContain('data-note-title="latest-note"');
   expect(notesIndex).toContain("data-note-tags=");
   expect(notesIndex).toContain("#engineering");
   expect(notesIndex).toContain("#运维");
+  expect(notesIndex.indexOf("#运维")).toBeLessThan(notesIndex.indexOf("#engineering"));
   expect(notesIndex).toContain('href="/notes/latest-note/"');
   expect(notesIndex).toContain("← Back to home");
   expect(notesIndex).not.toContain("READ");
