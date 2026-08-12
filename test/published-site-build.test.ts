@@ -120,6 +120,7 @@ test("a Notes Index renders a local filter prompt, static terminal output, Canon
   expect(notesIndex).toContain('href="/notes/latest-note/"');
   expect(notesIndex).toContain("← Back to home");
   expect(notesIndex).not.toContain("READ");
+  expect(notesIndex).toContain("-rw-r--r--");
   expect(notesIndex).not.toContain("topics");
 });
 

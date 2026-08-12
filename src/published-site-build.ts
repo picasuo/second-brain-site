@@ -10,6 +10,7 @@ import {
 } from "@picasuo/publish-set-contract";
 import GithubSlugger from "github-slugger";
 import MarkdownIt from "markdown-it";
+import Token from "markdown-it/lib/token.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const generatedNotesPath = join(projectRoot, "src", "generated", "published-notes.ts");
@@ -17,6 +18,7 @@ const generatedNotesPath = join(projectRoot, "src", "generated", "published-note
 export interface PublishedSiteBuildInput {
   vaultRevisionPath: URL | string;
   outputDirectory: string;
+  preserveGeneratedNotes?: boolean;
   vaultSha?: string;
 }
 
@@ -63,7 +65,7 @@ type RenderingContext = {
   vaultRootRealPath: string;
 };
 
-export async function buildPublishedSite({ vaultRevisionPath, outputDirectory, vaultSha }: PublishedSiteBuildInput): Promise<PublishedSiteBuildResult> {
+export async function buildPublishedSite({ preserveGeneratedNotes = false, vaultRevisionPath, outputDirectory, vaultSha }: PublishedSiteBuildInput): Promise<PublishedSiteBuildResult> {
   const vaultRoot = resolve(toPath(vaultRevisionPath));
   const vaultRootRealPath = await realpath(vaultRoot);
   const contract = await validatePublicationContract({ vaultRoot });
@@ -98,7 +100,7 @@ export async function buildPublishedSite({ vaultRevisionPath, outputDirectory, v
     await runAstroBuild(outputDirectory);
     await copyAttachments(outputDirectory, renderingContext.attachments.values());
   } finally {
-    await writeFile(generatedNotesPath, previousGeneratedNotes);
+    if (!preserveGeneratedNotes) await writeFile(generatedNotesPath, previousGeneratedNotes);
   }
 
   return { diagnostics };
@@ -167,6 +169,7 @@ async function renderPublishedNote(note: PublishedNote, context: RenderingContex
   const tokens = markdown.parse(note.body, {});
   const headings = assignHeadingIds(tokens);
   await transformMarkdownTokens(tokens, note, context);
+  wrapSecondLevelSections(tokens);
   return {
     html: markdown.renderer.render(tokens, markdown.options, {}),
     tableOfContents: headings.filter((heading): heading is TableOfContentsItem => heading.depth === 2 || heading.depth === 3),
@@ -195,6 +198,29 @@ async function transformMarkdownTokens(tokens: ReturnType<MarkdownIt["parse"]>, 
       await transformInlineTokens(token.children, note, context);
     }
   }
+}
+
+function wrapSecondLevelSections(tokens: ReturnType<MarkdownIt["parse"]>): void {
+  const secondLevelHeadingIndexes = tokens.flatMap((token, index) => token.type === "heading_open" && token.tag === "h2" ? [index] : []);
+  if (secondLevelHeadingIndexes.length === 0) return;
+
+  for (let sectionIndex = secondLevelHeadingIndexes.length - 1; sectionIndex >= 0; sectionIndex -= 1) {
+    const startIndex = secondLevelHeadingIndexes[sectionIndex];
+    const nextStartIndex = secondLevelHeadingIndexes[sectionIndex + 1] ?? tokens.length;
+    const number = String(sectionIndex + 1).padStart(2, "0");
+    tokens.splice(nextStartIndex, 0, sectionBoundaryToken("doc_section_close", "section", -1));
+    tokens.splice(startIndex, 0, sectionBoundaryToken("doc_section_open", "section", 1, number));
+  }
+}
+
+function sectionBoundaryToken(type: string, tag: string, nesting: 1 | -1, number?: string): Token {
+  const token = new Token(type, tag, nesting);
+  token.block = true;
+  if (number !== undefined) {
+    token.attrSet("class", "doc-section");
+    token.attrSet("data-section-number", number);
+  }
+  return token;
 }
 
 async function transformInlineTokens(tokens: NonNullable<ReturnType<MarkdownIt["parse"]>[number]["children"]>, note: PublishedNote, context: RenderingContext): Promise<void> {

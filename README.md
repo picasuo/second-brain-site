@@ -56,3 +56,19 @@ Run the build acceptance test and type checker:
 pnpm test
 pnpm typecheck
 ```
+
+## Local Vault preview
+
+Generate local development data from a Vault Revision without hand-editing
+`src/generated/published-notes.ts`:
+
+```sh
+pnpm prepare-dev -- --vault path/to/vault-revision
+pnpm dev
+```
+
+Or generate the data and start Astro dev in one command:
+
+```sh
+pnpm dev:vault -- --vault path/to/vault-revision
+```
