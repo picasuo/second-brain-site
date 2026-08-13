@@ -1,8 +1,8 @@
-# Second Brain Site — handoff（2026-08-11）
+# Second Brain Site — handoff（2026-08-13）
 
-## 下一次会话的目标
+## 当前状态
 
-继续完成或验收 Notes Index Filter Caret Editor；优先补齐真实浏览器交互验收，再处理后续视觉调整或新工单。不要重复实现已落地的 Token、Caret、片段替换、IME 与粘贴逻辑。
+当前工作区的 Notes Index 筛选提示已改为终端式单行输入 UI；本轮已修复镜像文本层的空格顺序和原生输入光标对齐问题。所有当前改动将作为一个提交提交。
 
 ## 先读
 
@@ -13,27 +13,32 @@
 - [第 04 号工单](.scratch/notes-index-filter-caret-editor/issues/04-deliver-composition-and-paste-caret-safety.md)
 - [领域用语](CONTEXT.md)
 
-## 当前已完成
+## 本提交包含的改动
 
-- `NotesIndexFilterPrompt` 已实现统一 Caret、固定有序的 Tag Token 前缀、字符/Token 级方向键和双向删除、建议选择、指针 Token 两侧定位、`#` 片段替换、IME 组合保护和粘贴为普通标题查询文本。实现位于 [NotesIndexFilterPrompt.astro](src/components/NotesIndexFilterPrompt.astro)。
-- `e84c8a5`：选择建议时完整替换连续 `#` 片段，即使 Caret 位于片段中间也不遗留尾字符。
-- `bf41ca1`：任何 Caret 位置的粘贴均追加到标题查询末尾，不会创建 Tag Token。
-- `d4584f4`：筛选提示行与 `TerminalCommandDisplay` 对齐字体、字号、字重和颜色；Caret 在失焦时也持续闪烁。减少动态效果设置仍会禁用动画。第 02–04 号工单已同步完成项和验证记录。
+- `NotesIndexFilterPrompt` 改为由原生 `<input>` 承接焦点和光标、由 `#cmd-mirror` 呈现终端式 Tag 与标题查询的单行筛选提示。它支持输入 `#` 的标签建议、方向键选择、Tab/Enter 确认、Esc 关闭，以及浏览器本地的标签与标题交集筛选。
+- 恢复输入控件的 combobox 语义：`role="combobox"`、`aria-autocomplete="list"`、`aria-controls`、`aria-expanded` 和建议列表的 `role="listbox"` 均已存在并随建议打开/关闭同步。
+- 修复连续空格后再输入文字时，镜像层将空格视觉上移到文字后的缺陷：空白现在作为带 `white-space: pre` 的显式 `.tk-space` 镜像单元渲染，不再被 Flex 布局忽略。
+- 修复 Tag Token 后的原生输入光标落入后续文字中间的问题：移除了 `.tk-tag` 会改变排版宽度的横向内边距，使镜像文字宽度与原生 input 的光标计算一致；Tag 的颜色和背景仍保留。
+- 在第 01 号工单的 `Comments` 中记录了上述两项回归规则。
+- `BaseLayout` 引入 JetBrains Mono 字体资源、调整等宽字体回退和终端窗口最大宽度，并清理已不再使用的旧筛选提示样式。
+- `src/generated/published-notes.ts` 已同步当前生成的 Published Note 数据，包含新增/更新的公开笔记内容和元数据。
+- 静态构建验收已更新为检查当前 input/镜像式筛选 Prompt 的稳定可访问结构。
 
-## 验证与待补齐
+## 已验证
 
-- 最近一次完整验证：`pnpm test`（28 项）及 `pnpm typecheck` 均通过；样式调整后的 `pnpm test test/published-site-build.test.ts`（16 项）亦通过。
-- 规格指定的生成站点浏览器端到端验收尚未补齐。此前本地 `file:` 产物被浏览器 URL 安全策略阻止；不要绕过该策略。应在可访问的本地开发服务器或获准的浏览器环境中，按第 02–04 号工单剩余 checkbox 验证。
-- 这些 Issue 的 `Status` 仍为 `ready-for-agent`，因为项目只定义了该组 triage 标签，没有定义“完成”状态；已完成清单和限制记录在各自的 `## Comments`。
+- `pnpm test`：5 个测试文件、28 项测试全部通过。
+- `pnpm typecheck`：0 errors、0 warnings、0 hints。
+- 本地可访问的 `/notes/` 页面已按最小场景验证：连续空格后输入文本时空格保留在文本之前；输入 `#反向代理 蔡大叔` 时，光标不再因 Tag 背景样式而提前落在“蔡大叔”中间。
+- `git diff --check` 通过。
 
-## 当前工作区与提交边界
+## 继续工作时的注意事项
 
-- 本次交接前，用户要求提交当前所有更改。提交后仍应先执行 `git status --short --branch`，不要假设工作树干净。
-- 当前的需求素材还包含 `.scratch/notes-index-filter-prompt-shell/` 与 `.scratch/notes-index-token-filter/`；它们不是 Caret Editor 的实现代码，后续处理时按各自规格执行。
+- Caret Editor 原规格中“固定有序 Tag Token 前缀、跨 Token 的真实 Caret、Token 双向删除、Token 两侧指针定位、IME/粘贴专用规则”等高级交互，当前需要用真实浏览器按第 02–04 号工单重新验收；不要仅根据旧交接记录将其视为已由当前 Prompt 实现。
+- 本次筛选 Prompt 使用标签形式的查询字符串（例如 `#反向代理 标题`）进行本地解析；它仍不改 URL、不查询服务端，也不改变 Publish Set。
+- 生成站点的浏览器级端到端验收尚未进入自动化测试套件。后续应通过可访问的本地开发服务器或获准的浏览器环境补齐，不要尝试绕过浏览器 URL 安全策略。
+- `.scratch/notes-index-filter-prompt-shell/` 与 `.scratch/notes-index-token-filter/` 是独立的需求素材；后续处理时分别按其规格执行。
 
-## Suggested skills
+## 提交边界
 
-- `implement`：用户要求落实后续 Issue 时使用。
-- `tdd`：在已确认的真实浏览器交互缝合点上添加验收测试时使用。
-- `browser:control-in-app-browser`：需要真实浏览器交互验收时使用；遵守其本地页面和 URL 安全策略。
-- `diagnosing-bugs`：浏览器、构建或交互行为出现故障时使用。
+- 本次提交应包含所有当前已修改文件：筛选 Prompt、布局样式、生成笔记、构建测试和 Caret Editor 工单记录。
+- 提交后先运行 `git status --short --branch`，不要假设工作树干净。
