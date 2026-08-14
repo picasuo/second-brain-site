@@ -34,180 +34,195 @@ const { tags } = Astro.props;
 </div>
 
 <script>
-  const prompt = document.querySelector<HTMLElement>("[data-notes-filter-prompt]");
-  const cmdInput = document.querySelector<HTMLInputElement>("#cmd-input");
-  const cmdMirror = document.querySelector<HTMLElement>("#cmd-mirror");
-  const cmdBox = document.querySelector<HTMLElement>("#cmd-box");
-  const cmdCount = document.querySelector<HTMLElement>("#cmd-count");
-  const suggestBox = document.querySelector<HTMLElement>("#suggest");
-  const rows = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-note-row]"));
-  const table = document.querySelector<HTMLElement>("[data-notes-table]");
-  const noMatch = document.querySelector<HTMLElement>("[data-no-match]");
-  const normalize = (value: string) => value.normalize("NFKC").trim().toLocaleLowerCase();
-  const allTagNames = (JSON.parse(prompt?.dataset.tags ?? "[]") as string[]).map(normalize);
-  let currentSuggestions: string[] = [];
-  let activeIndex = 0;
-  let currentTokenRange = { start: 0, end: 0 };
+  let clearNotesIndexFilterListeners = () => {};
 
-  const escapeHtml = (value: string) => value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  const initializeNotesIndexFilter = () => {
+    clearNotesIndexFilterListeners();
 
-  function syncCmdScroll() {
-    if (cmdInput === null || cmdMirror === null || cmdBox === null || cmdCount === null) return;
-    cmdMirror.scrollLeft = cmdInput.scrollLeft;
-    const overflow = cmdInput.scrollWidth > cmdInput.clientWidth + 1;
-    const maxScroll = cmdInput.scrollWidth - cmdInput.clientWidth;
-    cmdBox.classList.toggle("overflowing", overflow);
-    cmdBox.classList.toggle("can-scroll-left", cmdInput.scrollLeft > 1);
-    cmdBox.classList.toggle("can-scroll-right", overflow && maxScroll - cmdInput.scrollLeft > 1);
-    if (overflow) {
-      cmdCount.textContent = `${[...cmdInput.value].length} 字符`;
-      cmdCount.classList.add("show");
-    } else {
-      cmdCount.classList.remove("show");
-    }
-  }
+    const prompt = document.querySelector<HTMLElement>("[data-notes-filter-prompt]");
+    if (prompt === null) return;
 
-  function getTokenAtCursor(value: string, cursor: number) {
-    let start = cursor;
-    let end = cursor;
-    while (start > 0 && !/\s/u.test(value[start - 1])) start -= 1;
-    while (end < value.length && !/\s/u.test(value[end])) end += 1;
-    return { text: value.slice(start, end), start, end };
-  }
+    const cmdInput = document.querySelector<HTMLInputElement>("#cmd-input")!;
+    const cmdMirror = document.querySelector<HTMLElement>("#cmd-mirror")!;
+    const cmdBox = document.querySelector<HTMLElement>("#cmd-box")!;
+    const cmdCount = document.querySelector<HTMLElement>("#cmd-count")!;
+    const suggestBox = document.querySelector<HTMLElement>("#suggest")!;
+    const rows = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-note-row]"));
+    const table = document.querySelector<HTMLElement>("[data-notes-table]");
+    const noMatch = document.querySelector<HTMLElement>("[data-no-match]");
 
-  function renderMirror(value: string) {
-    if (cmdMirror === null) return;
-    if (value === "") {
-      cmdMirror.innerHTML = '<span class="ph">输入 # 联想标签，或输入关键词模糊搜索标题…</span>';
-      return;
-    }
-    const parts = value.split(/(\s+)/u);
-    cmdMirror.innerHTML = parts.map((part) => {
-      if (/^\s+$/u.test(part)) return `<span class="tk-space">${escapeHtml(part)}</span>`;
-      if (part.startsWith("#")) {
-        const known = allTagNames.includes(normalize(part.slice(1)));
-        return `<span class="tk-tag${known ? "" : " partial"}">${escapeHtml(part)}</span>`;
+    const controller = new AbortController();
+    clearNotesIndexFilterListeners = () => controller.abort();
+    const normalize = (value: string) => value.normalize("NFKC").trim().toLocaleLowerCase();
+    const allTagNames = (JSON.parse(prompt.dataset.tags ?? "[]") as string[]).map(normalize);
+    let currentSuggestions: string[] = [];
+    let activeIndex = 0;
+    let currentTokenRange = { start: 0, end: 0 };
+
+    const escapeHtml = (value: string) =>
+      value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+    function syncCmdScroll() {
+      cmdMirror.scrollLeft = cmdInput.scrollLeft;
+      const overflow = cmdInput.scrollWidth > cmdInput.clientWidth + 1;
+      const maxScroll = cmdInput.scrollWidth - cmdInput.clientWidth;
+      cmdBox.classList.toggle("overflowing", overflow);
+      cmdBox.classList.toggle("can-scroll-left", cmdInput.scrollLeft > 1);
+      cmdBox.classList.toggle("can-scroll-right", overflow && maxScroll - cmdInput.scrollLeft > 1);
+      if (overflow) {
+        cmdCount.textContent = `${[...cmdInput.value].length} 字符`;
+        cmdCount.classList.add("show");
+      } else {
+        cmdCount.classList.remove("show");
       }
-      return `<span class="tk-text">${escapeHtml(part)}</span>`;
-    }).join("");
-  }
+    }
 
-  function renderSuggestions() {
-    if (suggestBox === null) return;
-    suggestBox.innerHTML = currentSuggestions.map((tag, index) => {
-      const count = rows.filter((row) => (JSON.parse(row.dataset.noteTags ?? "[]") as string[]).some((rowTag) => normalize(rowTag) === tag)).length;
-      return `<div class="suggest-item${index === activeIndex ? " active" : ""}" data-tag="${escapeHtml(tag)}"><span class="tag"><span class="hash">#</span>${escapeHtml(tag)}</span><span class="count">${count} 篇</span></div>`;
-    }).join("") || '<div class="suggest-empty">没有匹配的标签</div>';
-  }
+    function getTokenAtCursor(value: string, cursor: number) {
+      let start = cursor;
+      let end = cursor;
+      while (start > 0 && !/\s/u.test(value[start - 1])) start -= 1;
+      while (end < value.length && !/\s/u.test(value[end])) end += 1;
+      return { text: value.slice(start, end), start, end };
+    }
 
-  function closeSuggestions() {
-    suggestBox?.classList.remove("open");
-    cmdInput?.setAttribute("aria-expanded", "false");
-    currentSuggestions = [];
-  }
+    function renderMirror(value: string) {
+      if (value === "") {
+        cmdMirror.innerHTML = '<span class="ph">输入 # 联想标签，或输入关键词模糊搜索标题…</span>';
+        return;
+      }
+      const parts = value.split(/(\s+)/u);
+      cmdMirror.innerHTML = parts
+        .map((part) => {
+          if (/^\s+$/u.test(part)) return `<span class="tk-space">${escapeHtml(part)}</span>`;
+          if (part.startsWith("#")) {
+            const known = allTagNames.includes(normalize(part.slice(1)));
+            return `<span class="tk-tag${known ? "" : " partial"}">${escapeHtml(part)}</span>`;
+          }
+          return `<span class="tk-text">${escapeHtml(part)}</span>`;
+        })
+        .join("");
+    }
 
-  function openSuggestFor(token: string, start: number) {
-    const prefix = normalize(token.slice(1));
-    currentSuggestions = allTagNames.filter((tag) => tag.startsWith(prefix));
-    activeIndex = 0;
-    currentTokenRange = { start, end: start + token.length };
-    if (currentSuggestions.length === 0) {
+    function renderSuggestions() {
+      suggestBox.innerHTML =
+        currentSuggestions
+          .map((tag, index) => {
+            const count = rows.filter((row) => (JSON.parse(row.dataset.noteTags ?? "[]") as string[]).some((rowTag) => normalize(rowTag) === tag)).length;
+            return `<div class="suggest-item${index === activeIndex ? " active" : ""}" data-tag="${escapeHtml(tag)}"><span class="tag"><span class="hash">#</span>${escapeHtml(tag)}</span><span class="count">${count} 篇</span></div>`;
+          })
+          .join("") || '<div class="suggest-empty">没有匹配的标签</div>';
+    }
+
+    function closeSuggestions() {
+      suggestBox.classList.remove("open");
+      cmdInput.setAttribute("aria-expanded", "false");
+      currentSuggestions = [];
+    }
+
+    function openSuggestFor(token: string, start: number) {
+      const prefix = normalize(token.slice(1));
+      currentSuggestions = allTagNames.filter((tag) => tag.startsWith(prefix));
+      activeIndex = 0;
+      currentTokenRange = { start, end: start + token.length };
+      if (currentSuggestions.length === 0) {
+        closeSuggestions();
+        return;
+      }
+      renderSuggestions();
+      suggestBox.classList.add("open");
+      cmdInput.setAttribute("aria-expanded", "true");
+    }
+
+    function updateSuggestions() {
+      const { text, start } = getTokenAtCursor(cmdInput.value, cmdInput.selectionStart ?? 0);
+      if (text.startsWith("#")) openSuggestFor(text, start);
+      else closeSuggestions();
+    }
+
+    function applyFilters() {
+      const tokens = cmdInput.value.trim().split(/\s+/u).filter(Boolean);
+      const tagTokens = tokens.filter((token) => token.startsWith("#")).map((token) => normalize(token.slice(1))).filter(Boolean);
+      const textTokens = tokens.filter((token) => !token.startsWith("#")).map(normalize);
+      let visibleCount = 0;
+      for (const row of rows) {
+        const noteTags = JSON.parse(row.dataset.noteTags ?? "[]") as string[];
+        const tagMatches = tagTokens.every((token) => noteTags.some((tag) => normalize(tag).startsWith(token)));
+        const titleMatches = textTokens.every((token) => normalize(row.dataset.noteTitle ?? "").includes(token));
+        const visible = tagMatches && titleMatches;
+        row.closest("li")?.toggleAttribute("hidden", !visible);
+        if (visible) visibleCount += 1;
+      }
+      table?.toggleAttribute("hidden", visibleCount === 0);
+      noMatch?.toggleAttribute("hidden", visibleCount !== 0);
+    }
+
+    function handleInputChange() {
+      renderMirror(cmdInput.value);
+      updateSuggestions();
+      applyFilters();
+      requestAnimationFrame(syncCmdScroll);
+    }
+
+    function acceptSuggestion(tag: string) {
+      if (tag === "") return;
+      const before = cmdInput.value.slice(0, currentTokenRange.start);
+      const after = cmdInput.value.slice(currentTokenRange.end).replace(/^\s+/u, "");
+      const insertion = `#${tag} `;
+      cmdInput.value = before + insertion + after;
+      const cursor = (before + insertion).length;
+      cmdInput.setSelectionRange(cursor, cursor);
       closeSuggestions();
-      return;
+      handleInputChange();
+      cmdInput.focus();
     }
-    renderSuggestions();
-    suggestBox?.classList.add("open");
-    cmdInput?.setAttribute("aria-expanded", "true");
-  }
 
-  function updateSuggestions() {
-    if (cmdInput === null) return;
-    const { text, start } = getTokenAtCursor(cmdInput.value, cmdInput.selectionStart ?? 0);
-    if (text.startsWith("#")) openSuggestFor(text, start);
-    else closeSuggestions();
-  }
-
-  function applyFilters() {
-    if (cmdInput === null) return;
-    const tokens = cmdInput.value.trim().split(/\s+/u).filter(Boolean);
-    const tagTokens = tokens.filter((token) => token.startsWith("#")).map((token) => normalize(token.slice(1))).filter(Boolean);
-    const textTokens = tokens.filter((token) => !token.startsWith("#")).map(normalize);
-    let visibleCount = 0;
-    for (const row of rows) {
-      const noteTags = JSON.parse(row.dataset.noteTags ?? "[]") as string[];
-      const tagMatches = tagTokens.every((token) => noteTags.some((tag) => normalize(tag).startsWith(token)));
-      const titleMatches = textTokens.every((token) => normalize(row.dataset.noteTitle ?? "").includes(token));
-      const visible = tagMatches && titleMatches;
-      row.closest("li")?.toggleAttribute("hidden", !visible);
-      if (visible) visibleCount += 1;
-    }
-    table?.toggleAttribute("hidden", visibleCount === 0);
-    noMatch?.toggleAttribute("hidden", visibleCount !== 0);
-  }
-
-  function handleInputChange() {
-    if (cmdInput === null) return;
-    renderMirror(cmdInput.value);
-    updateSuggestions();
-    applyFilters();
-    requestAnimationFrame(syncCmdScroll);
-  }
-
-  function acceptSuggestion(tag: string) {
-    if (cmdInput === null || tag === "") return;
-    const before = cmdInput.value.slice(0, currentTokenRange.start);
-    const after = cmdInput.value.slice(currentTokenRange.end).replace(/^\s+/u, "");
-    const insertion = `#${tag} `;
-    cmdInput.value = before + insertion + after;
-    const cursor = (before + insertion).length;
-    cmdInput.setSelectionRange(cursor, cursor);
-    closeSuggestions();
-    handleInputChange();
+    cmdInput.addEventListener("input", handleInputChange, { signal: controller.signal });
+    cmdInput.addEventListener("click", () => { updateSuggestions(); syncCmdScroll(); }, { signal: controller.signal });
+    cmdInput.addEventListener("scroll", syncCmdScroll, { signal: controller.signal });
+    cmdInput.addEventListener("focus", () => { cmdBox.classList.add("focused"); syncCmdScroll(); }, { signal: controller.signal });
+    cmdInput.addEventListener("blur", () => { cmdBox.classList.remove("focused"); window.setTimeout(closeSuggestions, 120); }, { signal: controller.signal });
+    cmdInput.addEventListener("keydown", (event) => {
+      if (!suggestBox.classList.contains("open")) return;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        activeIndex = (activeIndex + 1) % currentSuggestions.length;
+        renderSuggestions();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        activeIndex = (activeIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
+        renderSuggestions();
+      } else if (event.key === "Tab" || event.key === "Enter") {
+        event.preventDefault();
+        acceptSuggestion(currentSuggestions[activeIndex] ?? "");
+      } else if (event.key === "Escape") {
+        closeSuggestions();
+      }
+    }, { signal: controller.signal });
+    cmdInput.addEventListener("keyup", (event) => {
+      if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) requestAnimationFrame(syncCmdScroll);
+    }, { signal: controller.signal });
+    suggestBox.addEventListener("mousedown", (event) => {
+      const item = (event.target as Element).closest<HTMLElement>(".suggest-item");
+      if (item === null) return;
+      event.preventDefault();
+      acceptSuggestion(item.dataset.tag ?? "");
+    }, { signal: controller.signal });
+    document.addEventListener("click", (event) => {
+      if (!(event.target as Element).closest(".cmdline-wrap")) closeSuggestions();
+    }, { signal: controller.signal });
+    window.addEventListener("resize", syncCmdScroll, { signal: controller.signal });
+    renderMirror("");
+    syncCmdScroll();
     cmdInput.focus();
-  }
+  };
 
-  cmdInput?.addEventListener("input", handleInputChange);
-  cmdInput?.addEventListener("click", () => { updateSuggestions(); syncCmdScroll(); });
-  cmdInput?.addEventListener("scroll", syncCmdScroll);
-  cmdInput?.addEventListener("focus", () => { cmdBox?.classList.add("focused"); syncCmdScroll(); });
-  cmdInput?.addEventListener("blur", () => { cmdBox?.classList.remove("focused"); window.setTimeout(closeSuggestions, 120); });
-  cmdInput?.addEventListener("keydown", (event) => {
-    if (suggestBox?.classList.contains("open") !== true) return;
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      activeIndex = (activeIndex + 1) % currentSuggestions.length;
-      renderSuggestions();
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      activeIndex = (activeIndex - 1 + currentSuggestions.length) % currentSuggestions.length;
-      renderSuggestions();
-    } else if (event.key === "Tab" || event.key === "Enter") {
-      event.preventDefault();
-      acceptSuggestion(currentSuggestions[activeIndex] ?? "");
-    } else if (event.key === "Escape") {
-      closeSuggestions();
-    }
-  });
-  cmdInput?.addEventListener("keyup", (event) => {
-    if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) requestAnimationFrame(syncCmdScroll);
-  });
-  suggestBox?.addEventListener("mousedown", (event) => {
-    const item = (event.target as Element).closest<HTMLElement>(".suggest-item");
-    if (item === null) return;
-    event.preventDefault();
-    acceptSuggestion(item.dataset.tag ?? "");
-  });
-  document.addEventListener("click", (event) => {
-    if (!(event.target as Element).closest(".cmdline-wrap")) closeSuggestions();
-  });
-  window.addEventListener("resize", syncCmdScroll);
-  renderMirror("");
-  syncCmdScroll();
+  document.addEventListener("astro:page-load", initializeNotesIndexFilter);
+  initializeNotesIndexFilter();
 </script>
 
 <style is:global>

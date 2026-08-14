@@ -2,7 +2,6 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astro";
 import { publishedNotes } from "../../generated/published-notes";
-import TerminalShell from "../../layouts/TerminalShell.astro";
 
 export function getStaticPaths() {
   return publishedNotes.map((note) => ({
@@ -23,8 +22,7 @@ const tocItems = note.tableOfContents.map((item, index) => {
 });
 ---
 
-<BaseLayout title={note.title}>
-  <TerminalShell ariaLabel={`阅读 ${note.title}`} windowTitle={note.filename}>
+<BaseLayout title={note.title} ariaLabel={`阅读 ${note.title}`} windowTitle={note.filename}>
     <article class="terminal-note">
       <TerminalCommandDisplay command={`view ~/notes/${note.filename}`} />
       <header class="note-header">
@@ -77,8 +75,7 @@ const tocItems = note.tableOfContents.map((item, index) => {
       </div>
     </article>
 
-    <a slot="footer" class="terminal-footer-link" href="/notes/">← Back to notes</a>
-  </TerminalShell>
+  <a slot="footer" class="terminal-footer-link" href="/notes/">← Back to notes</a>
 </BaseLayout>
 
 <style is:global>
@@ -125,36 +122,52 @@ const tocItems = note.tableOfContents.map((item, index) => {
 </style>
 
 <script>
-  const wideTocMedia = window.matchMedia("(min-width: 1200px)");
-  const topLevelHeadings = Array.from(document.querySelectorAll<HTMLElement>(".note-body h2[id]"));
-  const wideTocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".wide-table-of-contents [data-toc-link]"));
-  let tocObserver: IntersectionObserver | null = null;
+  let clearNoteTocListeners = () => {};
 
-  const setActiveTocLink = (id: string | null) => {
-    for (const link of wideTocLinks) {
-      link.classList.toggle("is-active", id !== null && link.dataset.tocLink === id);
-    }
+  const initializeNoteToc = () => {
+    clearNoteTocListeners();
+
+    const wideTocMedia = window.matchMedia("(min-width: 1200px)");
+    const topLevelHeadings = Array.from(document.querySelectorAll<HTMLElement>(".note-body h2[id]"));
+    const wideTocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".wide-table-of-contents [data-toc-link]"));
+    if (topLevelHeadings.length === 0 || wideTocLinks.length === 0) return;
+
+    const controller = new AbortController();
+    let tocObserver: IntersectionObserver | null = null;
+    clearNoteTocListeners = () => {
+      controller.abort();
+      tocObserver?.disconnect();
+    };
+
+    const setActiveTocLink = (id: string | null) => {
+      for (const link of wideTocLinks) {
+        link.classList.toggle("is-active", id !== null && link.dataset.tocLink === id);
+      }
+    };
+
+    const updateTocSpy = () => {
+      tocObserver?.disconnect();
+      tocObserver = null;
+      setActiveTocLink(null);
+
+      if (!wideTocMedia.matches) return;
+      setActiveTocLink(topLevelHeadings[0]?.id ?? null);
+
+      tocObserver = new IntersectionObserver((entries) => {
+        const visibleHeading = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)
+          .at(0)?.target as HTMLElement | undefined;
+        if (visibleHeading) setActiveTocLink(visibleHeading.id);
+      }, { root: document.querySelector(".terminal-body"), rootMargin: "0px 0px -72% 0px", threshold: 0 });
+
+      for (const heading of topLevelHeadings) tocObserver.observe(heading);
+    };
+
+    updateTocSpy();
+    wideTocMedia.addEventListener("change", updateTocSpy, { signal: controller.signal });
   };
 
-  const updateTocSpy = () => {
-    tocObserver?.disconnect();
-    tocObserver = null;
-    setActiveTocLink(null);
-
-    if (!wideTocMedia.matches || topLevelHeadings.length === 0) return;
-    setActiveTocLink(topLevelHeadings[0]?.id ?? null);
-
-    tocObserver = new IntersectionObserver((entries) => {
-      const visibleHeading = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top)
-        .at(0)?.target as HTMLElement | undefined;
-      if (visibleHeading) setActiveTocLink(visibleHeading.id);
-    }, { root: document.querySelector(".terminal-body"), rootMargin: "0px 0px -72% 0px", threshold: 0 });
-
-    for (const heading of topLevelHeadings) tocObserver.observe(heading);
-  };
-
-  updateTocSpy();
-  wideTocMedia.addEventListener("change", updateTocSpy);
+  document.addEventListener("astro:page-load", initializeNoteToc);
+  initializeNoteToc();
 </script>

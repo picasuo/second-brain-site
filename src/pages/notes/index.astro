@@ -2,7 +2,6 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import NotesIndexFilterPrompt from "../../components/NotesIndexFilterPrompt.astro";
 import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astro";
-import TerminalShell from "../../layouts/TerminalShell.astro";
 import { publishedNotes } from "../../generated/published-notes";
 
 const tags = [...new Set(publishedNotes.flatMap((note) => note.tags))]
@@ -11,8 +10,7 @@ const latest = publishedNotes.at(0)?.date ?? "—";
 const hasPublishedNotes = publishedNotes.length > 0;
 ---
 
-<BaseLayout title="笔记">
-  <TerminalShell ariaLabel="Notes Index" windowTitle="picasuo@second-brain:~/notes">
+<BaseLayout title="笔记" ariaLabel="Notes Index" windowTitle="picasuo@second-brain:~/notes">
     <section class="notes-index" aria-label="Notes Index">
       <TerminalCommandDisplay command="notes --info" />
       <dl class="notes-summary" aria-label="Published Note summary">
@@ -63,6 +61,5 @@ const hasPublishedNotes = publishedNotes.length > 0;
       )}
     </section>
 
-    <a slot="footer" class="terminal-footer-link" href="/">← Back to home</a>
-  </TerminalShell>
+  <a slot="footer" class="terminal-footer-link" href="/">← Back to home</a>
 </BaseLayout>

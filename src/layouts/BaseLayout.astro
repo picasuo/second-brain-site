@@ -1,23 +1,31 @@
 ---
+import { ClientRouter } from "astro:transitions";
+import TerminalShell from "./TerminalShell.astro";
+
 interface Props {
   title: string;
+  ariaLabel: string;
+  windowTitle: string;
 }
 
-const { title } = Astro.props;
+const { title, ariaLabel, windowTitle } = Astro.props;
 ---
 
-<!doctype html>
-<html lang="zh-CN">
+<!doctype html transition:animate="none">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <ClientRouter />
   </head>
   <body>
     <main>
-      <slot />
+      <TerminalShell ariaLabel={ariaLabel} windowTitle={windowTitle}>
+        <slot />
+        <slot name="footer" slot="footer" />
+      </TerminalShell>
     </main>
   </body>
 </html>
@@ -321,7 +329,6 @@ const { title } = Astro.props;
       inset 0 1px rgba(255, 255, 255, 0.08),
       inset 0 -1px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(1.75rem) saturate(145%);
-    animation: terminal-enter 700ms cubic-bezier(.2,.8,.2,1) both;
   }
 
   .terminal-window.has-terminal-footer { grid-template-rows: auto minmax(0, 1fr) auto; }
@@ -403,7 +410,6 @@ const { title } = Astro.props;
   .notes-no-match, .notes-empty { margin: 1.5rem 0 0; color: var(--muted-strong); font: .84rem var(--font-mono); }
   .notes-no-match span, .notes-empty span { color: var(--accent); }
 
-  @keyframes terminal-enter { from { opacity: 0; transform: translateY(1.5rem) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes status-pulse { 50% { opacity: .4; box-shadow: 0 0 .2rem rgba(178,247,155,.3); } }
   @keyframes notes-filter-cursor-blink { 50% { opacity: 0; } }
 
@@ -433,7 +439,7 @@ const { title } = Astro.props;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .terminal-window, .terminal-status span, .notes-filter-cursor { animation: none; }
+    .terminal-status span, .notes-filter-cursor { animation: none; }
     [data-notes-filter-focused] .notes-filter-cursor { animation: none; }
     .profile-links a, .link-marker, .link-label, .terminal-footer-link, .note-row { transition: none; }
   }

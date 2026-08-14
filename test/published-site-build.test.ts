@@ -29,6 +29,29 @@ test("a Vault Revision with one Published Note produces a Notes Index and public
   expect(notePage).toContain("A fixture Vault Revision is the explicit source for this published page.");
 });
 
+test("Home、Notes Index 与 Published Note 共享启用客户端路由的 Terminal Window Shell", async () => {
+  const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(outputDirectory);
+
+  await buildPublishedSite({
+    vaultRevisionPath: new URL("./fixtures/one-published-note/", import.meta.url),
+    outputDirectory,
+  });
+
+  const pages = await Promise.all([
+    readFile(join(outputDirectory, "index.html"), "utf8"),
+    readFile(join(outputDirectory, "notes", "index.html"), "utf8"),
+    readFile(join(outputDirectory, "notes", "first-published-note", "index.html"), "utf8"),
+  ]);
+
+  for (const page of pages) {
+    expect(page).toContain('name="astro-view-transitions-enabled"');
+    expect(page).toContain('class="terminal-shell"');
+    expect(page).toContain('class="terminal-window');
+    expect(page).toContain('class="terminal-body"');
+  }
+});
+
 test("Home presents picasuo's profile and links to supported platforms", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);

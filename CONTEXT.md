@@ -100,6 +100,10 @@ _Avoid_: Notes Index、笔记列表
 MVP 的页面间导航：Home 提供进入 Notes Index 的入口；Notes Index 与 Published Note 的窗口固定 footer 分别提供返回 Home 和 Notes Index 的入口；不设置常驻的全局导航。
 _Avoid_: 全局导航栏、站点范围菜单
 
+**Terminal Window Shell**:
+包裹 Home、Notes Index 与 Published Note 的共享拟态 macOS 窗口框架；路由切换时框架保持视觉连续，仅替换其中的页面内容。
+_Avoid_: 页面级窗口容器、常驻全局导航
+
 **Terminal Command Display**:
 终端拟态中用于展示上下文或命令的静态文本；它不承担导航、筛选或其他点击交互。
 _Avoid_: 链接、按钮、可点击命令

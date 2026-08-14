@@ -1,12 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import TerminalCommandDisplay from "../components/TerminalCommandDisplay.astro";
-import TerminalShell from "../layouts/TerminalShell.astro";
 import { siteConfig } from "../site-config";
 ---
 
-<BaseLayout title={siteConfig.home.title}>
-  <TerminalShell ariaLabel="picasuo 个人主页" windowTitle="picasuo@second-brain:~">
+<BaseLayout title={siteConfig.home.title} ariaLabel="picasuo 个人主页" windowTitle="picasuo@second-brain:~">
     <div class="terminal-hero">
       <TerminalCommandDisplay className="terminal-prompt" command="picasuo --info" />
     </div>
@@ -45,29 +43,36 @@ import { siteConfig } from "../site-config";
     </nav>
 
     <p class="terminal-status"><span aria-hidden="true"></span> available for interesting work</p>
-  </TerminalShell>
 </BaseLayout>
 
 <script>
-  const profileLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-profile-link]"));
-  let selectedLinkIndex = 0;
+  let clearProfileLinkListeners = () => {};
 
-  const selectProfileLink = (nextIndex: number, moveFocus = false) => {
-    selectedLinkIndex = (nextIndex + profileLinks.length) % profileLinks.length;
+  const initializeProfileLinks = () => {
+    clearProfileLinkListeners();
 
-    profileLinks.forEach((link, index) => {
-      link.classList.toggle("is-selected", index === selectedLinkIndex);
-    });
+    const profileLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("[data-profile-link]"));
+    if (profileLinks.length === 0) return;
 
-    if (moveFocus) profileLinks[selectedLinkIndex]?.focus({ preventScroll: true });
-  };
+    const controller = new AbortController();
+    clearProfileLinkListeners = () => controller.abort();
+    let selectedLinkIndex = 0;
 
-  if (profileLinks.length > 0) {
+    const selectProfileLink = (nextIndex: number, moveFocus = false) => {
+      selectedLinkIndex = (nextIndex + profileLinks.length) % profileLinks.length;
+
+      profileLinks.forEach((link, index) => {
+        link.classList.toggle("is-selected", index === selectedLinkIndex);
+      });
+
+      if (moveFocus) profileLinks[selectedLinkIndex]?.focus({ preventScroll: true });
+    };
+
     selectProfileLink(0);
 
     profileLinks.forEach((link, index) => {
-      link.addEventListener("mouseenter", () => selectProfileLink(index));
-      link.addEventListener("focus", () => selectProfileLink(index));
+      link.addEventListener("mouseenter", () => selectProfileLink(index), { signal: controller.signal });
+      link.addEventListener("focus", () => selectProfileLink(index), { signal: controller.signal });
     });
 
     window.addEventListener("keydown", (event) => {
@@ -81,6 +86,9 @@ import { siteConfig } from "../site-config";
         event.preventDefault();
         profileLinks[selectedLinkIndex]?.click();
       }
-    });
-  }
+    }, { signal: controller.signal });
+  };
+
+  document.addEventListener("astro:page-load", initializeProfileLinks);
+  initializeProfileLinks();
 </script>
