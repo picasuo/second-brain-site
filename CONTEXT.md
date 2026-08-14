@@ -104,6 +104,10 @@ _Avoid_: 全局导航栏、站点范围菜单
 包裹 Home、Notes Index 与 Published Note 的共享拟态 macOS 窗口框架；路由切换时框架保持视觉连续，仅替换其中的页面内容。
 _Avoid_: 页面级窗口容器、常驻全局导航
 
+**Terminal Window Form**:
+Terminal Window Shell 对访客呈现的三种可交互形态：Windowed、Fullscreen 与 Floating Miniature。收起为 App Icon 是保留原形态的暂存状态，不是第四种窗口形态。
+_Avoid_: 原生浏览器全屏、关闭应用、第四种窗口模式
+
 **Terminal Command Display**:
 终端拟态中用于展示上下文或命令的静态文本；它不承担导航、筛选或其他点击交互。
 _Avoid_: 链接、按钮、可点击命令

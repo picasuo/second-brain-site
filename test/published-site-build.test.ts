@@ -49,6 +49,9 @@ test("Home、Notes Index 与 Published Note 共享启用客户端路由的 Termi
     expect(page).toContain('class="terminal-shell"');
     expect(page).toContain('class="terminal-window');
     expect(page).toContain('class="terminal-body"');
+    expect(page).toContain('aria-label="收起为应用图标"');
+    expect(page).toContain('aria-label="缩放为悬浮小窗"');
+    expect(page).toContain('aria-label="进入全屏"');
   }
 });
 

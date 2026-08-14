@@ -1,4 +1,6 @@
 ---
+import terminalAppIcon from "../assets/terminal-app-icon.png";
+
 interface Props {
   ariaLabel: string;
   windowTitle: string;
@@ -12,9 +14,18 @@ const hasFooter = Astro.slots.has("footer");
   <div class="pixel-field" aria-hidden="true"></div>
   <div class="pixel-glow" aria-hidden="true"></div>
 
+  <button class="terminal-app-icon" type="button" aria-label="恢复终端窗口" aria-hidden="true" tabindex="-1">
+    <img src={terminalAppIcon.src} alt="" draggable="false" />
+  </button>
+  <div class="terminal-mini-target" aria-hidden="true"></div>
+
   <div class:list={["terminal-window", { "has-terminal-footer": hasFooter }]} transition:name="terminal-window" transition:animate="none">
-    <div class="terminal-titlebar" aria-hidden="true" transition:name="terminal-titlebar" transition:animate="none">
-      <span class="window-controls"><i></i><i></i><i></i></span>
+    <div class="terminal-titlebar" transition:name="terminal-titlebar" transition:animate="none">
+      <span class="window-controls" role="group" aria-label="窗口控件">
+        <button class="window-control window-control-close" type="button" aria-label="收起为应用图标" title="收起为应用图标"></button>
+        <button class="window-control window-control-minimize" type="button" aria-label="缩放为悬浮小窗" title="缩放为悬浮小窗"></button>
+        <button class="window-control window-control-fullscreen" type="button" aria-label="进入全屏" title="进入全屏"></button>
+      </span>
       <span class="window-title">{windowTitle}</span>
       <span class="window-spacer"></span>
     </div>
@@ -24,3 +35,378 @@ const hasFooter = Astro.slots.has("footer");
     {hasFooter && <footer class="terminal-footer" transition:animate="fade"><slot name="footer" /></footer>}
   </div>
 </section>
+
+<script>
+  type WindowForm = "windowed" | "fullscreen" | "floating-miniature";
+
+  interface WindowPosition {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  }
+
+  interface WindowPresentation {
+    form: WindowForm;
+    iconified: boolean;
+    position: WindowPosition | null;
+  }
+
+  const presentation: WindowPresentation = {
+    form: "windowed",
+    iconified: false,
+    position: null,
+  };
+
+  const transitionEase = "cubic-bezier(.32,.72,0,1)";
+  let cleanupActiveWindow: (() => void) | undefined;
+
+  function motionDuration(duration: number) {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : duration;
+  }
+
+  function waitForAnimation(element: HTMLElement, duration: number, complete: () => void) {
+    let settled = false;
+    let timer: number | undefined;
+
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== element || event.propertyName !== "transform") return;
+      settle();
+    };
+
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+      element.removeEventListener("transitionend", onTransitionEnd);
+      complete();
+    };
+
+    if (duration === 0) {
+      settle();
+      return;
+    }
+
+    timer = window.setTimeout(settle, duration + 40);
+    element.addEventListener("transitionend", onTransitionEnd);
+  }
+
+  function initializeTerminalWindow() {
+    cleanupActiveWindow?.();
+
+    const shell = document.querySelector<HTMLElement>(".terminal-shell");
+    if (!shell) return;
+
+    const terminalWindow = shell.querySelector<HTMLElement>(".terminal-window")!;
+    const titlebar = shell.querySelector<HTMLElement>(".terminal-titlebar")!;
+    const appIcon = shell.querySelector<HTMLButtonElement>(".terminal-app-icon")!;
+    const miniTarget = shell.querySelector<HTMLElement>(".terminal-mini-target")!;
+    const closeControl = shell.querySelector<HTMLButtonElement>(".window-control-close")!;
+    const minimizeControl = shell.querySelector<HTMLButtonElement>(".window-control-minimize")!;
+    const fullscreenControl = shell.querySelector<HTMLButtonElement>(".window-control-fullscreen")!;
+
+    let drag:
+      | { pointerId: number; startX: number; startY: number; origin: WindowPosition; moved: boolean }
+      | undefined;
+    let isAnimating = false;
+
+    function syncControls() {
+      const canMinimize = presentation.form === "windowed" && !presentation.iconified;
+      minimizeControl.disabled = !canMinimize;
+      minimizeControl.setAttribute("aria-label", canMinimize ? "缩放为悬浮小窗" : "全屏时不能缩放为悬浮小窗");
+      fullscreenControl.classList.toggle("is-fullscreen", presentation.form === "fullscreen");
+      fullscreenControl.setAttribute("aria-label", presentation.form === "fullscreen" ? "退出全屏" : "进入全屏");
+      fullscreenControl.title = presentation.form === "fullscreen" ? "退出全屏" : "进入全屏";
+      appIcon.classList.toggle("is-visible", presentation.iconified);
+      appIcon.setAttribute("aria-hidden", String(!presentation.iconified));
+      appIcon.tabIndex = presentation.iconified ? 0 : -1;
+    }
+
+    function clearInlineBox() {
+      terminalWindow.style.position = "";
+      terminalWindow.style.inset = "";
+      terminalWindow.style.margin = "";
+      terminalWindow.style.left = "";
+      terminalWindow.style.top = "";
+      terminalWindow.style.bottom = "";
+      terminalWindow.style.width = "";
+      terminalWindow.style.height = "";
+      terminalWindow.style.zIndex = "";
+      terminalWindow.style.opacity = "";
+      terminalWindow.style.pointerEvents = "";
+      terminalWindow.style.transform = "";
+      terminalWindow.style.transformOrigin = "";
+      terminalWindow.style.transition = "";
+    }
+
+    function clampPosition(position: WindowPosition): WindowPosition {
+      const titlebarHeight = titlebar.getBoundingClientRect().height;
+      const visibleWidth = Math.min(position.width, 72);
+      return {
+        ...position,
+        left: Math.min(Math.max(position.left, -position.width + visibleWidth), window.innerWidth - visibleWidth),
+        top: Math.min(Math.max(position.top, 0), Math.max(0, window.innerHeight - titlebarHeight)),
+      };
+    }
+
+    function applyWindowedLayout() {
+      terminalWindow.classList.remove("is-fullscreen", "is-miniature", "is-iconified");
+      clearInlineBox();
+      if (!presentation.position) return;
+
+      presentation.position = clampPosition(presentation.position);
+      terminalWindow.style.position = "fixed";
+      terminalWindow.style.margin = "0";
+      terminalWindow.style.left = `${presentation.position.left}px`;
+      terminalWindow.style.top = `${presentation.position.top}px`;
+      terminalWindow.style.width = `${presentation.position.width}px`;
+      terminalWindow.style.height = `${presentation.position.height}px`;
+      terminalWindow.style.zIndex = "20";
+    }
+
+    function applyFullscreenLayout() {
+      clearInlineBox();
+      terminalWindow.classList.remove("is-miniature", "is-iconified");
+      terminalWindow.classList.add("is-fullscreen");
+    }
+
+    function applyFormLayout() {
+      if (presentation.form === "fullscreen") applyFullscreenLayout();
+      else applyWindowedLayout();
+      syncControls();
+    }
+
+    function freezeAt(rect: DOMRect) {
+      terminalWindow.classList.remove("is-fullscreen", "is-miniature", "is-iconified");
+      terminalWindow.style.transition = "none";
+      terminalWindow.style.position = "fixed";
+      terminalWindow.style.inset = "auto";
+      terminalWindow.style.margin = "0";
+      terminalWindow.style.left = `${rect.left}px`;
+      terminalWindow.style.top = `${rect.top}px`;
+      terminalWindow.style.bottom = "auto";
+      terminalWindow.style.width = `${rect.width}px`;
+      terminalWindow.style.height = `${rect.height}px`;
+      terminalWindow.style.zIndex = "30";
+      terminalWindow.style.opacity = "";
+      terminalWindow.style.pointerEvents = "";
+      terminalWindow.style.transformOrigin = "0 0";
+      terminalWindow.style.transform = "translate(0, 0) scale(1, 1)";
+      void terminalWindow.offsetWidth;
+    }
+
+    function transformTo(target: DOMRect, duration: number, complete: () => void) {
+      const start = terminalWindow.getBoundingClientRect();
+      const translateX = target.left - start.left;
+      const translateY = target.top - start.top;
+      const scaleX = target.width / start.width;
+      const scaleY = target.height / start.height;
+      const actualDuration = motionDuration(duration);
+
+      if (actualDuration === 0) {
+        terminalWindow.style.transition = "none";
+        terminalWindow.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+        complete();
+        return;
+      }
+
+      terminalWindow.style.transition = `transform ${actualDuration}ms ${transitionEase}`;
+      requestAnimationFrame(() => {
+        terminalWindow.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`;
+      });
+      waitForAnimation(terminalWindow, actualDuration, complete);
+    }
+
+    function applyMiniatureWithoutAnimation() {
+      applyWindowedLayout();
+      const start = terminalWindow.getBoundingClientRect();
+      freezeAt(start);
+      const target = miniTarget.getBoundingClientRect();
+      terminalWindow.classList.add("is-miniature");
+      terminalWindow.style.transform = `translate(${target.left - start.left}px, ${target.top - start.top}px) scale(${target.width / start.width}, ${target.height / start.height})`;
+      syncControls();
+    }
+
+    function minimize() {
+      if (isAnimating || presentation.form !== "windowed" || presentation.iconified) return;
+      const start = terminalWindow.getBoundingClientRect();
+      freezeAt(start);
+      presentation.form = "floating-miniature";
+      isAnimating = true;
+      terminalWindow.classList.add("is-miniature");
+      syncControls();
+      transformTo(miniTarget.getBoundingClientRect(), 460, () => {
+        terminalWindow.style.transition = "";
+        isAnimating = false;
+      });
+    }
+
+    function restoreFromMiniature() {
+      if (isAnimating || presentation.form !== "floating-miniature") return;
+      presentation.form = "windowed";
+      isAnimating = true;
+      terminalWindow.classList.remove("is-miniature");
+      syncControls();
+      const duration = motionDuration(420);
+      if (duration === 0) {
+        terminalWindow.style.transform = "translate(0, 0) scale(1, 1)";
+        isAnimating = false;
+        applyFormLayout();
+        return;
+      }
+
+      terminalWindow.style.transition = `transform ${duration}ms ${transitionEase}`;
+      requestAnimationFrame(() => {
+        terminalWindow.style.transform = "translate(0, 0) scale(1, 1)";
+      });
+      waitForAnimation(terminalWindow, duration, () => {
+        isAnimating = false;
+        applyFormLayout();
+      });
+    }
+
+    function applyIconifiedWithoutAnimation() {
+      applyFormLayout();
+      const start = terminalWindow.getBoundingClientRect();
+      freezeAt(start);
+      const target = appIcon.getBoundingClientRect();
+      terminalWindow.classList.add("is-iconified");
+      terminalWindow.style.transform = `translate(${target.left - start.left}px, ${target.top - start.top}px) scale(${target.width / start.width}, ${target.height / start.height})`;
+      terminalWindow.style.opacity = "0";
+      terminalWindow.style.pointerEvents = "none";
+      syncControls();
+    }
+
+    function iconify() {
+      if (isAnimating || presentation.iconified || presentation.form === "floating-miniature") return;
+      const start = terminalWindow.getBoundingClientRect();
+      freezeAt(start);
+      presentation.iconified = true;
+      isAnimating = true;
+      terminalWindow.classList.add("is-iconified");
+      syncControls();
+      transformTo(appIcon.getBoundingClientRect(), 380, () => {
+        terminalWindow.style.transition = "";
+        terminalWindow.style.opacity = "0";
+        terminalWindow.style.pointerEvents = "none";
+        isAnimating = false;
+      });
+    }
+
+    function restoreFromIcon() {
+      if (isAnimating || !presentation.iconified) return;
+      presentation.iconified = false;
+      isAnimating = true;
+      terminalWindow.style.opacity = "";
+      terminalWindow.style.pointerEvents = "";
+      terminalWindow.classList.remove("is-iconified");
+      syncControls();
+      const duration = motionDuration(380);
+      if (duration === 0) {
+        terminalWindow.style.transform = "translate(0, 0) scale(1, 1)";
+        isAnimating = false;
+        applyFormLayout();
+        return;
+      }
+
+      terminalWindow.style.transition = `transform ${duration}ms ${transitionEase}`;
+      requestAnimationFrame(() => {
+        terminalWindow.style.transform = "translate(0, 0) scale(1, 1)";
+      });
+      waitForAnimation(terminalWindow, duration, () => {
+        isAnimating = false;
+        applyFormLayout();
+      });
+    }
+
+    function toggleFullscreen() {
+      if (isAnimating || presentation.iconified || presentation.form === "floating-miniature") return;
+      presentation.form = presentation.form === "windowed" ? "fullscreen" : "windowed";
+      applyFormLayout();
+    }
+
+    function pointerDown(event: PointerEvent) {
+      if (event.button !== 0 || presentation.form !== "windowed" || presentation.iconified) return;
+      if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea, label")) return;
+
+      const rect = terminalWindow.getBoundingClientRect();
+      const origin = clampPosition({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+      drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin, moved: false };
+      titlebar.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    }
+
+    function pointerMove(event: PointerEvent) {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      const left = drag.origin.left + event.clientX - drag.startX;
+      const top = drag.origin.top + event.clientY - drag.startY;
+      drag.moved ||= Math.abs(left - drag.origin.left) > 3 || Math.abs(top - drag.origin.top) > 3;
+      if (!drag.moved) return;
+      presentation.position = clampPosition({ ...drag.origin, left, top });
+      applyWindowedLayout();
+    }
+
+    function pointerUp(event: PointerEvent) {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      if (titlebar.hasPointerCapture(event.pointerId)) titlebar.releasePointerCapture(event.pointerId);
+      drag = undefined;
+    }
+
+    function titlebarDoubleClick(event: MouseEvent) {
+      if (event.target instanceof Element && event.target.closest(".window-controls")) return;
+      toggleFullscreen();
+    }
+
+    function windowClick(event: MouseEvent) {
+      if (isAnimating || presentation.form !== "floating-miniature") return;
+      event.preventDefault();
+      event.stopPropagation();
+      restoreFromMiniature();
+    }
+
+    function handleResize() {
+      if (isAnimating) return;
+      if (presentation.iconified) {
+        applyIconifiedWithoutAnimation();
+      } else if (presentation.form === "floating-miniature") {
+        applyMiniatureWithoutAnimation();
+      } else if (presentation.form === "windowed" && presentation.position) {
+        presentation.position = clampPosition(presentation.position);
+        applyWindowedLayout();
+      }
+    }
+
+    closeControl.addEventListener("click", iconify);
+    minimizeControl.addEventListener("click", minimize);
+    fullscreenControl.addEventListener("click", toggleFullscreen);
+    appIcon.addEventListener("click", restoreFromIcon);
+    titlebar.addEventListener("dblclick", titlebarDoubleClick);
+    titlebar.addEventListener("pointerdown", pointerDown);
+    terminalWindow.addEventListener("click", windowClick, true);
+    window.addEventListener("pointermove", pointerMove);
+    window.addEventListener("pointerup", pointerUp);
+    window.addEventListener("pointercancel", pointerUp);
+    window.addEventListener("resize", handleResize);
+
+    if (presentation.iconified) applyIconifiedWithoutAnimation();
+    else if (presentation.form === "floating-miniature") applyMiniatureWithoutAnimation();
+    else applyFormLayout();
+
+    cleanupActiveWindow = () => {
+      closeControl.removeEventListener("click", iconify);
+      minimizeControl.removeEventListener("click", minimize);
+      fullscreenControl.removeEventListener("click", toggleFullscreen);
+      appIcon.removeEventListener("click", restoreFromIcon);
+      titlebar.removeEventListener("dblclick", titlebarDoubleClick);
+      titlebar.removeEventListener("pointerdown", pointerDown);
+      terminalWindow.removeEventListener("click", windowClick, true);
+      window.removeEventListener("pointermove", pointerMove);
+      window.removeEventListener("pointerup", pointerUp);
+      window.removeEventListener("pointercancel", pointerUp);
+      window.removeEventListener("resize", handleResize);
+    };
+  }
+
+  initializeTerminalWindow();
+  document.addEventListener("astro:page-load", initializeTerminalWindow);
+</script>
