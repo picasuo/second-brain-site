@@ -251,6 +251,8 @@ test("a Published Note renders MVP Markdown, safe links, attachments, and a Tabl
 
   expect(guidePage).toContain('<h2 id="overview">Overview</h2>');
   expect(guidePage).toContain('<h2 id="overview-1">Overview</h2>');
+  expect(guidePage).toContain('<section class="doc-section">');
+  expect(guidePage).toContain('<span class="sec-no">01</span><h2 id="overview">Overview</h2>');
   expect(guidePage).toContain('aria-label="目录"');
   expect(guidePage).toContain('href="#overview-1"');
   expect(guidePage).toContain("<strong>bold</strong>");

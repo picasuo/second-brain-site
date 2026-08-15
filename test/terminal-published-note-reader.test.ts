@@ -47,7 +47,8 @@ test("a Published Note reader uses the final filename, preserves Markdown headin
   expect(guidePage).toContain('<h2 id="overview">Overview</h2>');
   expect(guidePage).toContain('<h3 id="details">Details</h3>');
   expect(guidePage).toContain('class="wide-table-of-contents"');
-  expect(guidePage).toContain('class="narrow-table-of-contents"');
+  expect(guidePage).toContain('class="toc-mobile"');
+  expect(guidePage).toContain('<summary>$ tree --toc</summary>');
   expect(guidePage).toContain("<details");
   expect(guidePage).toContain('href="#overview-1"');
 });

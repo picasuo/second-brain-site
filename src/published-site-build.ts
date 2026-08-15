@@ -155,6 +155,9 @@ function createMarkdownRenderer(): MarkdownIt {
   markdown.renderer.rules.link_close = (tokens, index, options, _environment, renderer) => (
     tokens[index].meta?.unresolved ? "</span>" : renderer.renderToken(tokens, index, options)
   );
+  markdown.renderer.rules.doc_section_open = (tokens, index, options, _environment, renderer) => (
+    `${renderer.renderToken(tokens, index, options)}<span class="sec-no">${tokens[index].content}</span>`
+  );
   return markdown;
 }
 
@@ -218,7 +221,7 @@ function sectionBoundaryToken(type: string, tag: string, nesting: 1 | -1, number
   token.block = true;
   if (number !== undefined) {
     token.attrSet("class", "doc-section");
-    token.attrSet("data-section-number", number);
+    token.content = number;
   }
   return token;
 }
