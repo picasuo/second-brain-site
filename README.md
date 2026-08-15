@@ -72,3 +72,10 @@ Or generate the data and start Astro dev in one command:
 ```sh
 pnpm dev:vault -- --vault path/to/vault-revision
 ```
+
+To allow other devices on the local network to access the preview, bind the
+server to all interfaces:
+
+```sh
+pnpm dev:vault -- --vault path/to/vault-revision --host 0.0.0.0
+```

@@ -61,6 +61,7 @@ const { title, ariaLabel, windowTitle } = Astro.props;
     background: var(--canvas);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    overflow: hidden;
   }
 
   main {
@@ -423,8 +424,8 @@ const { title, ariaLabel, windowTitle } = Astro.props;
   }
   .window-control {
     position: relative;
-    width: 0.78rem;
-    height: 0.78rem;
+    width: 12px;
+    height: 12px;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -434,26 +435,50 @@ const { title, ariaLabel, windowTitle } = Astro.props;
     transition: filter 120ms ease, transform 120ms ease, opacity 120ms ease;
   }
 
-  .window-control::after {
+  .window-control-icon-frame {
     position: absolute;
-    inset: 0;
-    color: rgba(0, 0, 0, .57);
-    font: 800 .64rem/.7rem var(--font-sans);
+    top: 50%;
+    left: 50%;
+    display: block;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
     opacity: 0;
     transition: opacity 100ms ease;
-    content: "×";
   }
-
-  .terminal-titlebar:hover .window-control:not(:disabled)::after,
-  .window-control:focus-visible::after { opacity: 1; }
+  .window-control-icon {
+    position: absolute;
+    display: block;
+    max-width: none;
+    pointer-events: none;
+  }
+  .window-control-close .window-control-icon-frame { inset: 2px; width: auto; height: auto; transform: none; }
+  .window-control-close .window-control-icon { inset: 0; width: 100%; height: 100%; }
+  .window-control-minimize .window-control-icon-frame { width: 0.54rem; height: 0.1rem; }
+  .window-control-minimize .window-control-icon { inset: 0; width: 100%; height: 100%; }
+  .window-control-fullscreen .window-control-icon-frame { width: 0.56rem; height: 0.5644rem; }
+  .window-control-fullscreen .window-control-icon-frame.window-control-icon-enter-fullscreen { width: 0.5rem; height: 0.5rem; }
+  .window-control-icon-enter-fullscreen .window-control-icon {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .window-control-icon-exit-fullscreen .window-control-icon {
+    top: 0;
+    left: -6.01%;
+    width: 112.02%;
+    height: 112.03%;
+  }
+  .window-control-icon-exit-fullscreen { display: none; }
+  .terminal-titlebar:hover .window-control:not(:disabled) .window-control-icon-frame,
+  .window-controls:focus-within .window-control:not(:disabled) .window-control-icon-frame { opacity: 1; }
   .window-control:hover:not(:disabled) { filter: brightness(1.12); transform: scale(1.18); }
   .window-control:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
   .window-control:disabled { cursor: not-allowed; opacity: .34; filter: grayscale(.52); }
   .window-control-minimize { background: #f1bd4d; }
-  .window-control-minimize::after { line-height: .58rem; content: "−"; }
   .window-control-fullscreen { background: #62c553; }
-  .window-control-fullscreen::after { font-size: .68rem; line-height: .67rem; content: "↗"; }
-  .window-control-fullscreen.is-fullscreen::after { content: "↙"; }
+  .window-control-fullscreen.is-fullscreen .window-control-icon-enter-fullscreen { display: none; }
+  .window-control-fullscreen.is-fullscreen .window-control-icon-exit-fullscreen { display: block; }
   .window-title { justify-self: center; }
   .window-spacer { min-width: 2.7rem; }
 

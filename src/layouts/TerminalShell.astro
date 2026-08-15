@@ -1,5 +1,9 @@
 ---
 import terminalAppIcon from "../assets/terminal-app-icon.png";
+import closeIcon from "../assets/window-controls/close.svg";
+import exitFullscreenIcon from "../assets/window-controls/exit-fullscreen.svg";
+import fullscreenIcon from "../assets/window-controls/fullscreen.svg";
+import minimizeIcon from "../assets/window-controls/minimize.svg";
 
 interface Props {
   ariaLabel: string;
@@ -22,9 +26,24 @@ const hasFooter = Astro.slots.has("footer");
   <div class:list={["terminal-window", { "has-terminal-footer": hasFooter }]} transition:name="terminal-window" transition:animate="none">
     <div class="terminal-titlebar" transition:name="terminal-titlebar" transition:animate="none">
       <span class="window-controls" role="group" aria-label="窗口控件">
-        <button class="window-control window-control-close" type="button" aria-label="收起为应用图标" title="收起为应用图标"></button>
-        <button class="window-control window-control-minimize" type="button" aria-label="缩放为悬浮小窗" title="缩放为悬浮小窗"></button>
-        <button class="window-control window-control-fullscreen" type="button" aria-label="进入全屏" title="进入全屏"></button>
+        <button class="window-control window-control-close" type="button" aria-label="收起为应用图标" title="收起为应用图标">
+          <span class="window-control-icon-frame">
+            <img class="window-control-icon" src={closeIcon.src} alt="" />
+          </span>
+        </button>
+        <button class="window-control window-control-minimize" type="button" aria-label="缩放为悬浮小窗" title="缩放为悬浮小窗">
+          <span class="window-control-icon-frame">
+            <img class="window-control-icon" src={minimizeIcon.src} alt="" />
+          </span>
+        </button>
+        <button class="window-control window-control-fullscreen" type="button" aria-label="进入全屏" title="进入全屏">
+          <span class="window-control-icon-frame window-control-icon-enter-fullscreen">
+            <img class="window-control-icon" src={fullscreenIcon.src} alt="" />
+          </span>
+          <span class="window-control-icon-frame window-control-icon-exit-fullscreen">
+            <img class="window-control-icon" src={exitFullscreenIcon.src} alt="" />
+          </span>
+        </button>
       </span>
       <span class="window-title">{windowTitle}</span>
       <span class="window-spacer"></span>
@@ -108,7 +127,12 @@ const hasFooter = Astro.slots.has("footer");
     let drag:
       | { pointerId: number; startX: number; startY: number; origin: WindowPosition; moved: boolean }
       | undefined;
+    let touchTap: { pointerId: number; startX: number; startY: number; moved: boolean } | undefined;
+    let previousTitlebarTap: { timestamp: number; x: number; y: number } | undefined;
     let isAnimating = false;
+    const titlebarTapMovement = 3;
+    const titlebarDoubleTapInterval = 320;
+    const titlebarDoubleTapDistance = 24;
 
     function syncControls() {
       const canMinimize = presentation.form === "windowed" && !presentation.iconified;
@@ -326,8 +350,18 @@ const hasFooter = Astro.slots.has("footer");
     }
 
     function pointerDown(event: PointerEvent) {
-      if (event.button !== 0 || presentation.form !== "windowed" || presentation.iconified) return;
-      if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea, label")) return;
+      if (event.button !== 0 || presentation.iconified || presentation.form === "floating-miniature") return;
+      if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea, label")) {
+        previousTitlebarTap = undefined;
+        return;
+      }
+
+      if (event.pointerType === "touch") {
+        touchTap = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moved: false };
+        event.preventDefault();
+      }
+
+      if (presentation.form !== "windowed") return;
 
       const rect = terminalWindow.getBoundingClientRect();
       const origin = clampPosition({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
@@ -337,19 +371,39 @@ const hasFooter = Astro.slots.has("footer");
     }
 
     function pointerMove(event: PointerEvent) {
+      if (touchTap?.pointerId === event.pointerId) {
+        touchTap.moved ||= Math.abs(event.clientX - touchTap.startX) > titlebarTapMovement || Math.abs(event.clientY - touchTap.startY) > titlebarTapMovement;
+      }
+
       if (!drag || drag.pointerId !== event.pointerId) return;
       const left = drag.origin.left + event.clientX - drag.startX;
       const top = drag.origin.top + event.clientY - drag.startY;
-      drag.moved ||= Math.abs(left - drag.origin.left) > 3 || Math.abs(top - drag.origin.top) > 3;
+      drag.moved ||= Math.abs(left - drag.origin.left) > titlebarTapMovement || Math.abs(top - drag.origin.top) > titlebarTapMovement;
       if (!drag.moved) return;
       presentation.position = clampPosition({ ...drag.origin, left, top });
       applyWindowedLayout();
     }
 
     function pointerUp(event: PointerEvent) {
-      if (!drag || drag.pointerId !== event.pointerId) return;
-      if (titlebar.hasPointerCapture(event.pointerId)) titlebar.releasePointerCapture(event.pointerId);
-      drag = undefined;
+      const completedTouchTap = event.pointerType === "touch" && touchTap?.pointerId === event.pointerId ? touchTap : undefined;
+      if (completedTouchTap) touchTap = undefined;
+
+      if (drag?.pointerId === event.pointerId) {
+        if (titlebar.hasPointerCapture(event.pointerId)) titlebar.releasePointerCapture(event.pointerId);
+        drag = undefined;
+      }
+
+      if (!completedTouchTap || completedTouchTap.moved || event.type !== "pointerup") {
+        if (completedTouchTap?.moved || event.type !== "pointerup") previousTitlebarTap = undefined;
+        return;
+      }
+
+      const isDoubleTap = previousTitlebarTap
+        && event.timeStamp - previousTitlebarTap.timestamp <= titlebarDoubleTapInterval
+        && Math.hypot(event.clientX - previousTitlebarTap.x, event.clientY - previousTitlebarTap.y) <= titlebarDoubleTapDistance;
+
+      previousTitlebarTap = isDoubleTap ? undefined : { timestamp: event.timeStamp, x: event.clientX, y: event.clientY };
+      if (isDoubleTap) toggleFullscreen();
     }
 
     function titlebarDoubleClick(event: MouseEvent) {
