@@ -11,6 +11,12 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
 
+test("Notes Index Filter Prompt 在窄屏以 16px 输入文字避免 iOS 聚焦缩放", async () => {
+  const prompt = await readFile(new URL("../src/components/NotesIndexFilterPrompt.astro", import.meta.url), "utf8");
+
+  expect(prompt).toMatch(/@media \(max-width: 560px\)[\s\S]*?\.cmdline-mirror,\s*\.cmd-input\s*\{[\s\S]*?font-size:\s*16px;/u);
+});
+
 test("a Vault Revision with one Published Note produces a Notes Index and public note page", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);
