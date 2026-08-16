@@ -1,8 +1,8 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
 import NotesIndexFilterPrompt from "../../components/NotesIndexFilterPrompt.astro";
 import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astro";
 import { publishedNotes } from "../../generated/published-notes";
+import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const tags = [...new Set(publishedNotes.flatMap((note) => note.tags))]
   .sort((left, right) => left.localeCompare(right, "zh-CN"));
@@ -54,12 +54,57 @@ const hasPublishedNotes = publishedNotes.length > 0;
               ))}
             </ol>
           </div>
-          <p class="notes-no-match" data-no-match hidden><span aria-hidden="true">$</span> grep: no matching notes</p>
+          <p class="notes-no-match" data-no-match hidden><span aria-hidden="true">👻&nbsp;Oops!</span> grep: no matching notes</p>
         </>
       ) : (
-        <p class="notes-empty"><span aria-hidden="true">$</span> notes: no published notes</p>
+        <p class="notes-empty"><span aria-hidden="true">👻&nbsp;&nbsp;Oops!</span> notes: no published notes</p>
       )}
     </section>
 
   <a slot="footer" class="terminal-footer-link" href="/">← Back to home</a>
 </BaseLayout>
+
+<style is:global>
+  .notes-index { max-width: 64rem; }
+  .notes-index > .terminal-command { margin-bottom: 1.6rem; }
+  .notes-summary { display: grid; gap: .45rem; margin: 0 0 2.3rem; padding-left: 2ch; font: .8rem var(--font-mono); }
+  .notes-summary div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: var(--space-4); }
+  .notes-summary dt { color: var(--muted); }
+  .notes-summary dd { margin: 0; color: var(--ink); }
+  .notes-table { border-top: 1px solid var(--rule-soft); font-family: var(--font-mono); }
+  .notes-table-header, .note-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 270px; gap: 16px; align-items: center; }
+  .notes-table-header { padding: 10px 10px; color: var(--muted-faint); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+  .note-list { display: block; margin: 0; padding: 0; list-style: none; }
+  .note-row { position: relative; padding: 13px 10px; border-top: 1px solid var(--rule-soft); border-radius: var(--radius-md); color: var(--ink); text-decoration: none; transition: background .12s ease; }
+  .note-row::before { position: absolute; top: 8px; bottom: 8px; left: 0; width: 2px; border-radius: 2px; background: transparent; content: ""; }
+  .note-row:hover, .note-row:focus-visible { background: var(--accent-wash); }
+  .note-row:hover::before, .note-row:focus-visible::before { background: var(--accent); }
+  .note-row:hover .note-row-title, .note-row:focus-visible .note-row-title { color: var(--accent-strong); }
+  .note-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .note-row:active { background: var(--accent-wash-strong); }
+  .note-row time { color: var(--muted-faint); font-size: 12.5px; }
+  .note-row-name { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .note-row-permission { flex: none; color: var(--muted-faint); font-size: 11px; }
+  .note-row-title { overflow: hidden; color: var(--ink); font-size: 14.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; transition: color .12s ease; }
+  .note-row-tags { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .notes-no-match, .notes-empty { margin: 1.5rem 0 0; color: var(--muted-strong); font: .84rem var(--font-mono); }
+  .notes-no-match span, .notes-empty span { color: var(--accent); }
+
+  @media (max-width: 43rem) {
+    .notes-summary { margin-bottom: 1.8rem; }
+  }
+
+  @media (max-width: 700px) {
+    .notes-table-header { display: none; }
+    .notes-table { border-top: 0; }
+    .note-row { grid-template-columns: 1fr; grid-template-areas: "meta" "title" "tags"; row-gap: 6px; padding: 16px 12px; }
+    .note-row time { grid-area: meta; }
+    .note-row-name { grid-area: title; gap: 10px; }
+    .note-row-permission { display: none; }
+    .note-row-tags { grid-area: tags; white-space: normal; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .note-row { transition: none; }
+  }
+</style>

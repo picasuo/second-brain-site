@@ -8,3 +8,15 @@ const { className, command } = Astro.props;
 ---
 
 <p class:list={["terminal-command", className]}><span>$</span> {command}</p>
+
+<style is:global>
+  .terminal-command {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: clamp(0.85rem, 1.35vw, 0.92rem);
+    font-weight: 700;
+  }
+
+  .terminal-command span { color: var(--accent); }
+</style>

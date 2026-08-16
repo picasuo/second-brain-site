@@ -78,6 +78,41 @@ const tocItems = note.tableOfContents.map((item, index) => {
 </BaseLayout>
 
 <style is:global>
+  .note-body { grid-area: content; min-width: 0; max-width: 66ch; color: var(--ink); font-family: var(--font-mono); font-size: clamp(0.94rem, 1.45vw, 1rem); line-height: 1.9; }
+  .note-body > :first-child { margin-top: 0; }
+  .note-body > :last-child { margin-bottom: 0; }
+  .note-body p { margin: 0 0 1.15rem; }
+  .note-body:has(.doc-section) > :not(.doc-section) { margin-left: 2.375rem; }
+  .note-body ul, .note-body ol { margin: 1.1rem 0 1.25rem; padding-left: 1.4rem; }
+  .note-body li + li { margin-top: 0.35rem; }
+  .note-body h2, .note-body h3 { scroll-margin-top: 1.5rem; line-height: 1.35; }
+  .note-body h2 { margin: 0 0 1.15rem; color: var(--ink); font-size: 1.1rem; font-weight: 700; }
+  .note-body h3 { margin: 2.1rem 0 0.8rem; color: var(--accent-strong); font-size: 0.94rem; font-weight: 650; }
+  .note-body .doc-section { position: relative; margin: 0 0 2.375rem; padding-left: 2.375rem; border-left: 1px solid var(--rule-soft); }
+  .note-body .doc-section:last-child { margin-bottom: 0; border-left-color: transparent; }
+  .note-body .doc-section .sec-no,
+  .note-body .doc-section[data-section-number]::before {
+    position: absolute;
+    top: 0.125rem;
+    left: -0.8125rem;
+    padding: 0.125rem 0.25rem;
+    color: var(--muted-faint);
+    background: var(--surface);
+    font-size: 0.6875rem;
+    line-height: normal;
+  }
+  .note-body .doc-section[data-section-number]::before { content: attr(data-section-number); }
+  .note-body blockquote { margin: 1.65rem 0; padding: 0.85rem 1rem; border-left: 2px solid var(--accent); border-radius: 0 0.45rem 0.45rem 0; color: var(--muted-strong); background: var(--accent-wash); font-size: 0.92em; }
+  .note-body blockquote > :last-child { margin-bottom: 0; }
+  .note-body hr { height: 1px; margin: 2.5rem 0; border: 0; background: var(--rule-soft); }
+  .note-body code { padding: 0.12em 0.34em; border: 1px solid var(--rule-soft); border-radius: 0.22rem; color: var(--accent-strong); background: var(--surface-soft); font-family: var(--font-mono); font-size: 0.86em; }
+  .note-body pre { overflow-x: auto; padding: 1rem 1.15rem; border: 1px solid var(--rule-soft); border-radius: 0.5rem; color: var(--ink); background: var(--surface-soft); line-height: 1.65; }
+  .note-body pre code { padding: 0; background: transparent; color: inherit; }
+  .note-body table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.84em; }
+  .note-body th, .note-body td { padding: 0.65rem 0.75rem; border: 1px solid var(--rule); text-align: left; }
+  .note-body th { color: var(--accent-strong); background: var(--accent-wash); }
+  .note-body img { display: block; max-width: 100%; height: auto; }
+
   .terminal-note { max-width: 70rem; }
   .terminal-note > .terminal-command { margin-bottom: clamp(1.6rem, 3vw, 2.6rem); }
   .terminal-note .note-header { max-width: 50rem; margin-bottom: 2.5rem; padding-bottom: 1.6rem; border-bottom: 1px solid var(--rule-soft); }
@@ -91,7 +126,7 @@ const tocItems = note.tableOfContents.map((item, index) => {
   .terminal-note .note-layout { display: block; grid-template-columns: none; grid-template-areas: none; gap: 0; }
   .terminal-note .note-body { grid-area: auto; }
   .wide-table-of-contents { display: none; }
-  .toc-mobile { display: block; margin: 26px 0 32px; border: 1px solid var(--rule-soft); border-radius: 8px; color: var(--muted); font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; overflow: hidden; }
+  .toc-mobile { display: block; margin: 26px 0 32px; border: 1px solid var(--rule-soft); border-radius: var(--radius-md); color: var(--muted); font-family: var(--font-mono); overflow: hidden; }
   .toc-mobile summary { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; color: var(--muted); background: var(--surface-soft); cursor: pointer; font-family: inherit; font-size: 13px; list-style: none; }
   .toc-mobile summary::-webkit-details-marker { display: none; }
   .toc-mobile summary::after { color: var(--muted-faint); content: "▾"; transition: transform .15s ease; }

@@ -1,0 +1,100 @@
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../assets/fonts/JetBrainsMono-Variable.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: dark;
+  font-family: var(--font-mono);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --accent: #6fe3a0;
+  --accent-strong: #a4f7c3;
+  --accent-wash: rgba(111, 227, 160, 0.1);
+  --accent-wash-strong: rgba(111, 227, 160, 0.17);
+  --canvas: #090c0a;
+  --canvas-dot: #10140f;
+  --ink: #dbe6df;
+  --muted: #7c8a82;
+  --muted-strong: #9ba8a1;
+  --muted-faint: #4d5951;
+  --rule: #1d2620;
+  --rule-soft: #151c17;
+  --surface: #0c110d;
+  --surface-soft: #0a0f0b;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 8px;
+  --radius-lg: 0.75rem;
+  --radius-pill: 9999px;
+  --effect-grid-accent: rgba(111, 227, 160, 0.12);
+  --effect-grid-ink: rgba(219, 230, 223, 0.06);
+  --effect-mask-opaque: #000;
+  --effect-glow-accent: rgba(111, 227, 160, 0.08);
+  --effect-gloss-subtle: rgba(255, 255, 255, 0.025);
+  --effect-window-gloss: rgba(255, 255, 255, 0.04);
+  --effect-window-accent-gloss: rgba(111, 227, 160, 0.025);
+  --effect-window-surface: rgba(12, 17, 13, 0.86);
+  --effect-shadow-window: rgba(0, 0, 0, 0.58);
+  --effect-shadow-outline: rgba(0, 0, 0, 0.48);
+  --effect-highlight-strong: rgba(255, 255, 255, 0.08);
+  --effect-shadow-inset: rgba(0, 0, 0, 0.35);
+  --effect-shadow-miniature: rgba(0, 0, 0, 0.78);
+  --effect-shadow-app-icon: rgba(0, 0, 0, 0.52);
+  --effect-shadow-app-icon-hover: rgba(0, 0, 0, 0.66);
+  --effect-titlebar-gloss-start: rgba(255, 255, 255, 0.055);
+  --effect-titlebar-gloss-end: rgba(255, 255, 255, 0.012);
+  --effect-highlight-subtle: rgba(255, 255, 255, 0.04);
+  --effect-control-highlight: rgba(255, 255, 255, 0.25);
+  --effect-link-selected-glow: rgba(178, 247, 155, 0.18);
+  --effect-status-glow: rgba(178, 247, 155, 0.78);
+  --effect-status-glow-pulse: rgba(178, 247, 155, 0.3);
+  --effect-popover-shadow: rgba(0, 0, 0, 0.75);
+  --window-control-close: #ed6257;
+  --window-control-minimize: #f1bd4d;
+  --window-control-fullscreen: #62c553;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-width: 20rem;
+  margin: 0;
+  color: var(--ink);
+  background: var(--canvas);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+main {
+  width: min(calc(100% - 2rem), 70rem);
+  margin: 0 auto;
+  padding: 3rem 0 5rem;
+}
+
+a {
+  color: var(--accent-strong);
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.16em;
+}
+
+a:hover { color: var(--accent); }
+
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 0.22rem;
+}
+
+@media (max-width: 48rem) {
+  main { width: min(calc(100% - 2rem), 44rem); padding: 1.5rem 0 3.5rem; }
+}

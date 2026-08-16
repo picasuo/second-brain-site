@@ -50,9 +50,10 @@ settings and secrets remain unrelated to Pages hosting.
 The Vault-side dispatch template and credential ownership checklist are documented
 in [docs/vault-publication.md](docs/vault-publication.md).
 
-Run the build acceptance test and type checker:
+Run the style-token lint, build acceptance test, and type checker:
 
 ```sh
+pnpm lint:styles
 pnpm test
 pnpm typecheck
 ```

@@ -8,6 +8,7 @@
     "dev:vault": "tsx scripts/dev-with-vault.ts",
     "prepare-dev": "tsx scripts/prepare-dev-published-notes.ts",
     "build": "tsx scripts/build-published-site.ts",
+    "lint:styles": "tsx scripts/lint-style-tokens.ts",
     "test": "vitest run --maxWorkers=1 --minWorkers=1 --testTimeout=10000",
     "test:watch": "vitest",
     "typecheck": "ASTRO_TELEMETRY_DISABLED=1 astro check"

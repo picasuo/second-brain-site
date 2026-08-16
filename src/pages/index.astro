@@ -92,3 +92,41 @@ import { siteConfig } from "../site-config";
   document.addEventListener("astro:page-load", initializeProfileLinks);
   initializeProfileLinks();
 </script>
+
+<style is:global>
+  .terminal-hero { display: flex; gap: clamp(1rem, 3vw, 2rem); align-items: center; }
+
+  .terminal-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: .72rem; margin: clamp(1rem, 1.6vw, 1.5rem) 0 0; padding-left: 2ch; font-family: var(--font-mono); }
+  .terminal-info div { display: grid; grid-template-columns: minmax(6.6rem, 9rem) minmax(0, 1fr); gap: var(--space-4); align-items: baseline; }
+  .terminal-info dt { color: var(--muted); font-size: 0.78rem; }
+  .terminal-info dd { margin: 0; color: var(--ink); font-size: .78rem; line-height: 1.6; }
+  .terminal-info dd a { color: var(--accent-strong); text-decoration: none; }
+  .terminal-info dd a:hover { text-decoration: underline; }
+  .terminal-info dd [aria-hidden="true"] { color: var(--accent); }
+
+  .profile-links { margin-top: clamp(2.25rem, 4vw, 3.5rem); }
+  .links-heading { margin-bottom: .8rem; }
+  .profile-links ul { display: grid; gap: .18rem; margin: 0; padding: 0; list-style: none; }
+  .profile-links a { display: inline-flex; align-items: center; gap: .7rem; min-height: 2.25rem; padding: .35rem .5rem; color: var(--muted-strong); font-family: var(--font-mono); font-size: clamp(.98rem, 2vw, 1.13rem); font-weight: 650; text-decoration: none; transition: color 140ms ease, background 140ms ease; }
+  .profile-links a.is-selected { color: var(--accent-strong); background: var(--accent-wash); }
+  .profile-links a:focus-visible { outline: none; }
+  .link-marker { width: .72rem; color: var(--accent); opacity: 0; transform: translateX(-.2rem); transition: opacity 140ms ease, transform 140ms ease; }
+  .profile-links a.is-selected .link-marker { opacity: 1; transform: translateX(0); }
+  .link-label { transition: text-shadow 140ms ease; }
+  .profile-links a.is-selected .link-label { text-shadow: 0 0 .8rem var(--effect-link-selected-glow); }
+  .terminal-status { display: flex; gap: .48rem; align-items: center; margin: clamp(2.8rem, 5vw, 4.2rem) 0 0; color: var(--muted); font: .75rem var(--font-mono); }
+  .terminal-status span { width: .48rem; height: .48rem; border-radius: 50%; background: var(--accent); box-shadow: 0 0 .75rem var(--effect-status-glow); animation: status-pulse 2.2s ease-in-out infinite; }
+
+  @keyframes status-pulse { 50% { opacity: .4; box-shadow: 0 0 .2rem var(--effect-status-glow-pulse); } }
+
+  @media (max-width: 43rem) {
+    .terminal-info { gap: .72rem; }
+    .terminal-info div { grid-template-columns: 6.15rem minmax(0, 1fr); gap: .55rem; }
+    .profile-links { margin-top: 3.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-status span { animation: none; }
+    .profile-links a, .link-marker, .link-label { transition: none; }
+  }
+</style>

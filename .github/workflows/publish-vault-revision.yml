@@ -39,6 +39,9 @@ jobs:
       - name: Install Site Repository dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Enforce style token rules
+        run: pnpm lint:styles
+
       - name: Validate Vault Revision receipt
         id: receipt
         env:
