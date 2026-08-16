@@ -7,16 +7,23 @@ interface Props {
 const { className, command } = Astro.props;
 ---
 
-<p class:list={["terminal-command", className]}><span>$</span> {command}</p>
+<p class:list={["terminal-command", className]}><span class="terminal-command-prompt">$</span> <span class="terminal-command-text">{command}</span></p>
 
 <style is:global>
   .terminal-command {
     margin: 0;
     color: var(--ink);
     font-family: var(--font-mono);
-    font-size: clamp(0.85rem, 1.35vw, 0.92rem);
-    font-weight: 700;
   }
 
-  .terminal-command span { color: var(--accent); }
+  .terminal-command .terminal-command-prompt {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: clamp(0.85rem, 1.35vw, 0.92rem);
+  }
+
+  .terminal-command .terminal-command-text {
+    color: inherit;
+    font-size: 14.5px;
+  }
 </style>
