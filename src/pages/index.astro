@@ -7,26 +7,27 @@ import { siteConfig } from "../site-config";
 <BaseLayout title={siteConfig.home.title} ariaLabel="picasuo 个人主页" windowTitle="picasuo@second-brain:~">
     <div class="terminal-hero">
       <TerminalCommandDisplay className="terminal-prompt" command="picasuo --info" />
+      <dl class="terminal-info" aria-label="个人信息">
+          <div>
+            <dt>location</dt>
+            <dd>杭州</dd>
+          </div>
+          <div>
+            <dt>experience</dt>
+            <dd>2021 — 至今</dd>
+          </div>
+          <div>
+            <dt>employer</dt>
+            <dd><a href="https://www.immed.co/" target="_blank" rel="noreferrer">一目可视 <span aria-hidden="true">↗</span></a></dd>
+          </div>
+          <div>
+            <dt>focus</dt>
+            <dd>web frontend <span aria-hidden="true">│</span> electron <span aria-hidden="true">│</span> flutter</dd>
+          </div>
+       </dl>
     </div>
 
-    <dl class="terminal-info" aria-label="个人信息">
-      <div>
-        <dt>location</dt>
-        <dd>杭州</dd>
-      </div>
-      <div>
-        <dt>experience</dt>
-        <dd>2021 — 至今</dd>
-      </div>
-      <div>
-        <dt>current employer</dt>
-        <dd><a href="https://www.immed.co/" target="_blank" rel="noreferrer">一目可视 <span aria-hidden="true">↗</span></a></dd>
-      </div>
-      <div>
-        <dt>focus</dt>
-        <dd>web frontend <span aria-hidden="true">│</span> electron <span aria-hidden="true">│</span> flutter</dd>
-      </div>
-    </dl>
+
 
     <nav class="profile-links" aria-label="个人链接">
       <TerminalCommandDisplay className="links-heading" command="ls ./links" />
@@ -94,12 +95,12 @@ import { siteConfig } from "../site-config";
 </script>
 
 <style is:global>
-  .terminal-hero { display: flex; gap: clamp(1rem, 3vw, 2rem); align-items: center; }
+  .terminal-hero { display: flex; flex-direction:column; gap: clamp(1rem, 1.6vw, 1.5rem);}
 
-  .terminal-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: .72rem; margin: clamp(1rem, 1.6vw, 1.5rem) 0 0; padding-left: 2ch; font-family: var(--font-mono); }
+  .terminal-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: .45rem; padding-left: 2ch; font-family: var(--font-mono);font-size:14px; }
   .terminal-info div { display: grid; grid-template-columns: minmax(6.6rem, 9rem) minmax(0, 1fr); gap: var(--space-4); align-items: baseline; }
-  .terminal-info dt { color: var(--muted); font-size: 0.78rem; }
-  .terminal-info dd { margin: 0; color: var(--ink); font-size: .78rem; line-height: 1.6; }
+  .terminal-info dt { color: var(--muted) ;white-space: nowrap; }
+  .terminal-info dd { margin: 0; color: var(--ink);  line-height: 1.6; }
   .terminal-info dd a { color: var(--accent-strong); text-decoration: none; }
   .terminal-info dd a:hover { text-decoration: underline; }
   .terminal-info dd [aria-hidden="true"] { color: var(--accent); }

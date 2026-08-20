@@ -80,6 +80,102 @@ export const publishedNotes: PublishedNote[] = [
     "title": "Oracle 服务器开机 SOP"
   },
   {
+    "noteUrl": "/notes/personal-server-security-hardening-solution/",
+    "date": "2026-04-01",
+    "filename": "个人服务器安全加固方案.md",
+    "renderedContent": "<h1 id=\"个人服务器安全加固方案\">个人服务器安全加固方案</h1>\n<section class=\"doc-section\">\n<span class=\"sec-no\">01</span><h2 id=\"方案核心逻辑\">方案核心逻辑</h2>\n<p>本方案遵循 <strong>&quot;最小暴露面&quot;</strong> 原则，构建三层递进的防御体系：</p>\n<ul>\n<li><strong>网络层 (Network)</strong>：利用 Tailscale 建立私有隧道，关闭云平台所有公网入站端口，使服务器在公网上&quot;隐身&quot;。</li>\n<li><strong>应用层 (SSH)</strong>：强制 SSH 仅限密钥登录，物理切断密码爆破的可能性。</li>\n<li><strong>本地层 (OS)</strong>：配置 UFW 防火墙作为二次保险，防止内网渗透及 Docker 自动开孔风险。</li>\n</ul>\n<blockquote>\n<p>相关文档：</p>\n<ul>\n<li>Tailscale 深度原理参见 <a href=\"/notes/n-8fdfccf8-31b5-463b-8822-d7377cf8f6d7/\">Tailscale 零公网暴露方案</a></li>\n<li>多机集群架构参见 <a href=\"/notes/n-dc38d8d8-5706-421f-bfd4-682b46d1becc/\">Oracle 多机集群零公网架构方案</a>（Oracle 免费层专用）</li>\n</ul>\n</blockquote>\n<hr>\n</section>\n<section class=\"doc-section\">\n<span class=\"sec-no\">02</span><h2 id=\"分步实施指南\">分步实施指南</h2>\n<h3 id=\"阶段一虚拟组网-tailscale\">阶段一：虚拟组网 (Tailscale)</h3>\n<ol>\n<li><strong>安装与连接</strong>：在服务器和本地电脑分别执行 <code>tailscale up</code> 并完成登录。</li>\n<li><strong>获取内网 IP</strong>：记录服务器在 Tailscale 内部的 IP（通常为 <code>100.x.y.z</code>）。</li>\n<li><strong>持久化配置</strong>：登录 <a href=\"https://login.tailscale.com/admin/machines\">Tailscale Admin Console</a> → <strong>Edit machine settings</strong> → 勾选 <strong>Disable key expiry</strong>（避免半年后凭证过期导致无法连接）。</li>\n</ol>\n<h3 id=\"阶段二ssh-身份验证加固\">阶段二：SSH 身份验证加固</h3>\n<ol>\n<li>\n<p><strong>注入公钥</strong>：将本地电脑的 <code>id_rsa.pub</code> 内容写入服务器的 <code>/root/.ssh/authorized_keys</code>。</p>\n</li>\n<li>\n<p><strong>修改配置</strong>：编辑 <code>/etc/ssh/sshd_config</code>：</p>\n</li>\n</ol>\n<pre><code class=\"language-bash\"># 只允许 Root 密钥登录\nPermitRootLogin prohibit-password\n# 彻底关闭密码登录\nPasswordAuthentication no\n# 启用公钥校验\nPubkeyAuthentication yes\n</code></pre>\n<ol start=\"3\">\n<li><strong>生效</strong>：执行 <code>sshd -t</code> 检查语法，无误后执行 <code>systemctl restart ssh</code>。</li>\n</ol>\n<h3 id=\"阶段三本地防火墙-ufw\">阶段三：本地防火墙 (UFW)</h3>\n<pre><code class=\"language-bash\"># 安装并初始化\nsudo apt update &amp;&amp; sudo apt install ufw -y\nsudo ufw default deny incoming\nsudo ufw default allow outgoing\n\n# 核心规则：放行虚拟网卡 (必须优先执行此条)\nsudo ufw allow in on tailscale0\n\n# 允许同子网内网互通（请替换为你云平台子网的实际 CIDR）\nsudo ufw allow from 10.0.0.0/24\n\n# 启动\nsudo ufw enable\n</code></pre>\n<h3 id=\"阶段四云端隔离云平台安全组\">阶段四：云端隔离（云平台安全组）</h3>\n<p>在云平台的<strong>安全组 / 防火墙规则</strong>中执行以下操作：</p>\n<ol>\n<li><strong>删除</strong>：所有源为 <code>0.0.0.0/0</code> 的入站规则（22, 80, 443 等）。</li>\n<li><strong>新增</strong>：允许源为你的子网网段（如 <code>10.0.0.0/24</code>）的所有协议入站。</li>\n</ol>\n<blockquote>\n<p>💡 <strong>Oracle Cloud 示例</strong>：在控制台的 <strong>安全列表 (Security Lists)</strong> 中操作。\n其他平台：AWS 对应 Security Group，GCP 对应 Firewall Rules，腾讯云/阿里云对应安全组。</p>\n</blockquote>\n<hr>\n</section>\n<section class=\"doc-section\">\n<span class=\"sec-no\">03</span><h2 id=\"三重兜底机制紧急救援-sop\">三重兜底机制（紧急救援 SOP）</h2>\n<p>即使在最坏情况下（Tailscale 故障），仍有三层救援手段。</p>\n<h3 id=\"第一层tailscale主通道\">第一层：Tailscale（主通道）</h3>\n<ul>\n<li>SSH 主入口</li>\n<li>不暴露公网</li>\n<li>支持多设备</li>\n</ul>\n<p>👉 日常使用 99% 依赖它</p>\n<h3 id=\"第二层公网-ssh临时救援\">第二层：公网 SSH（临时救援）</h3>\n<blockquote>\n<p>仅作为临时应急通道使用，修复后立即关闭。</p>\n</blockquote>\n<p><strong>操作流程：</strong></p>\n<ol>\n<li>登录云平台控制台</li>\n<li>临时添加入站规则：</li>\n</ol>\n<pre><code>0.0.0.0/0 → TCP 22\n</code></pre>\n<ol start=\"3\">\n<li>使用公网 IP 登录（注意：密码仍不可用，必须有私钥）：</li>\n</ol>\n<pre><code class=\"language-bash\">ssh root@公网IP\n</code></pre>\n<ol start=\"4\">\n<li>修复后<strong>立即关闭</strong>端口</li>\n</ol>\n<h3 id=\"第三层serial-console--vnc终极救援\">第三层：Serial Console / VNC（终极救援）</h3>\n<blockquote>\n<p>即使 SSH 配错、防火墙锁死、Tailscale 挂了，主流云平台都提供控制台级别的远程访问，可 100% 救回服务器。</p>\n</blockquote>\n<p><strong>各平台入口：</strong></p>\n<table>\n<thead>\n<tr>\n<th>云平台</th>\n<th>功能名称</th>\n<th>路径</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Oracle Cloud</td>\n<td>Serial Console</td>\n<td>Compute → Instance → Console Connection</td>\n</tr>\n<tr>\n<td>AWS</td>\n<td>EC2 Serial Console</td>\n<td>EC2 → Instance → Connect → EC2 Serial Console</td>\n</tr>\n<tr>\n<td>腾讯云 / 阿里云</td>\n<td>VNC 登录</td>\n<td>实例详情 → 远程连接 → VNC</td>\n</tr>\n</tbody>\n</table>\n<p><strong>能做什么？</strong></p>\n<pre><code class=\"language-bash\"># 重启 SSH\nsystemctl restart ssh\n\n# 关闭防火墙\nufw disable\n\n# 修配置\nnano /etc/ssh/sshd_config\n</code></pre>\n<p>👉 <strong>100% 救回服务器</strong></p>\n<hr>\n</section>\n<section class=\"doc-section\">\n<span class=\"sec-no\">04</span><h2 id=\"可恢复性矩阵\">可恢复性矩阵</h2>\n<table>\n<thead>\n<tr>\n<th>场景</th>\n<th>是否可救</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>SSH 配错</td>\n<td>✅</td>\n</tr>\n<tr>\n<td>防火墙锁死</td>\n<td>✅</td>\n</tr>\n<tr>\n<td>Tailscale 挂</td>\n<td>✅</td>\n</tr>\n<tr>\n<td>网络异常</td>\n<td>✅</td>\n</tr>\n</tbody>\n</table>\n<hr>\n</section>\n<section class=\"doc-section\">\n<span class=\"sec-no\">05</span><h2 id=\"紧急容灾预案-sop\">紧急容灾预案 SOP</h2>\n<p><strong>场景：Tailscale 故障导致无法连接。</strong></p>\n<ol>\n<li><strong>控制台救急</strong>：在云平台后台手动临时添加入站规则：<code>源: 0.0.0.0/0, 协议: TCP, 端口: 22</code>。</li>\n<li><strong>密钥登录</strong>：使用 <code>ssh root@服务器公网IP</code> 登录（注意：此时密码仍不可用，必须有私钥）。</li>\n<li><strong>修复服务</strong>：排查并重启 Tailscale。</li>\n<li><strong>复原隔离</strong>：修复后<strong>立即删除</strong>临时 22 端口规则。</li>\n</ol>\n<hr>\n</section>\n<section class=\"doc-section\">\n<span class=\"sec-no\">06</span><h2 id=\"配置核对清单-checklist\">配置核对清单 (Checklist)</h2>\n<ul>\n<li>[ ] Tailscale 已设置 Disable Key Expiry</li>\n<li>[ ] <code>/etc/ssh/sshd_config</code> 已禁用密码登录</li>\n<li>[ ] UFW 已允许 <code>on tailscale0</code> 流量</li>\n<li>[ ] 云平台安全组已删除 <code>0.0.0.0/0</code> 的入站规则</li>\n</ul>\n<hr>\n</section>\n<section class=\"doc-section\">\n<span class=\"sec-no\">07</span><h2 id=\"日常运维\">日常运维</h2>\n<h3 id=\"如何连接\">如何连接</h3>\n<pre><code class=\"language-bash\"># 永远通过 Tailscale IP 访问\nssh root@100.x.y.z\n</code></pre>\n<h3 id=\"如何发布-web-服务\">如何发布 Web 服务</h3>\n<p>推荐使用 Cloudflare Tunnel：</p>\n<ul>\n<li><strong>原理</strong>：<code>cloudflared</code> 进程从内部向外建立连接，对外提供服务而无需开放端口</li>\n<li><strong>优势</strong>：无需在云平台安全组或 UFW 中开启 80/443 端口，IP 不对外暴露</li>\n<li>详细配置参见 <a href=\"/notes/cloudflare-tunnel-solution/\">Cloudflare Tunnel 完整方案</a></li>\n</ul>\n</section>\n",
+    "tableOfContents": [
+      {
+        "depth": 2,
+        "id": "方案核心逻辑",
+        "text": "方案核心逻辑"
+      },
+      {
+        "depth": 2,
+        "id": "分步实施指南",
+        "text": "分步实施指南"
+      },
+      {
+        "depth": 3,
+        "id": "阶段一虚拟组网-tailscale",
+        "text": "阶段一：虚拟组网 (Tailscale)"
+      },
+      {
+        "depth": 3,
+        "id": "阶段二ssh-身份验证加固",
+        "text": "阶段二：SSH 身份验证加固"
+      },
+      {
+        "depth": 3,
+        "id": "阶段三本地防火墙-ufw",
+        "text": "阶段三：本地防火墙 (UFW)"
+      },
+      {
+        "depth": 3,
+        "id": "阶段四云端隔离云平台安全组",
+        "text": "阶段四：云端隔离（云平台安全组）"
+      },
+      {
+        "depth": 2,
+        "id": "三重兜底机制紧急救援-sop",
+        "text": "三重兜底机制（紧急救援 SOP）"
+      },
+      {
+        "depth": 3,
+        "id": "第一层tailscale主通道",
+        "text": "第一层：Tailscale（主通道）"
+      },
+      {
+        "depth": 3,
+        "id": "第二层公网-ssh临时救援",
+        "text": "第二层：公网 SSH（临时救援）"
+      },
+      {
+        "depth": 3,
+        "id": "第三层serial-console--vnc终极救援",
+        "text": "第三层：Serial Console / VNC（终极救援）"
+      },
+      {
+        "depth": 2,
+        "id": "可恢复性矩阵",
+        "text": "可恢复性矩阵"
+      },
+      {
+        "depth": 2,
+        "id": "紧急容灾预案-sop",
+        "text": "紧急容灾预案 SOP"
+      },
+      {
+        "depth": 2,
+        "id": "配置核对清单-checklist",
+        "text": "配置核对清单 (Checklist)"
+      },
+      {
+        "depth": 2,
+        "id": "日常运维",
+        "text": "日常运维"
+      },
+      {
+        "depth": 3,
+        "id": "如何连接",
+        "text": "如何连接"
+      },
+      {
+        "depth": 3,
+        "id": "如何发布-web-服务",
+        "text": "如何发布 Web 服务"
+      }
+    ],
+    "tags": [
+      "运维",
+      "安全",
+      "ssh",
+      "tailscale",
+      "ufw"
+    ],
+    "title": "个人服务器安全加固方案"
+  },
+  {
     "noteUrl": "/notes/cloudflare-tunnel-solution/",
     "date": "2026-04-01",
     "filename": "Cloudflare Tunnel 完整方案.md",

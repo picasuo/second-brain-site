@@ -66,8 +66,8 @@ const hasPublishedNotes = publishedNotes.length > 0;
 
 <style is:global>
   .notes-index { max-width: 64rem; }
-  .notes-index > .terminal-command { margin-bottom: 1.6rem; }
-  .notes-summary { display: grid; gap: .45rem; margin: 0 0 2.3rem; padding-left: 2ch; font: .8rem var(--font-mono); }
+  .notes-index > .terminal-command { margin-bottom: clamp(1rem, 1.6vw, 1.5rem); }
+  .notes-summary { display: grid; gap: .45rem; padding-left: 2ch; font:14px var(--font-mono); }
   .notes-summary div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: var(--space-4); }
   .notes-summary dt { color: var(--muted); }
   .notes-summary dd { margin: 0; color: var(--ink); }
