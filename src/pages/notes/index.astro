@@ -65,14 +65,14 @@ const hasPublishedNotes = publishedNotes.length > 0;
 </BaseLayout>
 
 <style is:global>
-  .notes-index { max-width: 64rem; }
+  .notes-index { width: 100%; }
   .notes-index > .terminal-command { margin-bottom: clamp(1rem, 1.6vw, 1.5rem); }
   .notes-summary { display: grid; gap: .45rem; padding-left: 2ch; font:14px var(--font-mono); }
   .notes-summary div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: var(--space-4); }
   .notes-summary dt { color: var(--muted); }
   .notes-summary dd { margin: 0; color: var(--ink); }
   .notes-table { border-top: 1px solid var(--rule-soft); font-family: var(--font-mono); }
-  .notes-table-header, .note-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 270px; gap: 16px; align-items: center; }
+  .notes-table-header, .note-row { display: grid; grid-template-columns: minmax(6rem, .4fr) minmax(0, 1.5fr) minmax(15rem, 1.75fr); gap: var(--space-5); align-items: center; }
   .notes-table-header { padding: 10px 10px; color: var(--muted-faint); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
   .note-list { display: block; margin: 0; padding: 0; list-style: none; }
   .note-row { position: relative; padding: 13px 10px; border-top: 1px solid var(--rule-soft); border-radius: var(--radius-md); color: var(--ink); text-decoration: none; transition: background .12s ease; }

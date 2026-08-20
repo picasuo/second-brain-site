@@ -105,7 +105,7 @@ _Avoid_: 全局导航栏、站点范围菜单
 _Avoid_: 页面级窗口容器、常驻全局导航
 
 **Terminal Window Form**:
-Terminal Window Shell 对访客呈现的三种可交互形态：Windowed、Fullscreen 与 Floating Miniature。收起为 App Icon 是保留原形态的暂存状态，不是第四种窗口形态。
+Terminal Window Shell 对访客呈现的三种可交互形态：Windowed、Fullscreen 与 Floating Miniature；初次进入时，宽视口默认为 Windowed，窄视口默认为 Fullscreen。访客主动改变形态后，该选择在当前页面会话的路由跳转和视口变化中保持；收起为 App Icon 是保留原形态的暂存状态，不是第四种窗口形态。
 _Avoid_: 原生浏览器全屏、关闭应用、第四种窗口模式
 
 **Terminal Command Display**:

@@ -16,6 +16,12 @@ const { title, ariaLabel, windowTitle } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
+    <script is:inline>
+      if (window["__secondBrainTerminalInitialForm"] === undefined) {
+        window["__secondBrainTerminalInitialForm"] = window.matchMedia("(max-width: 699px)").matches ? "fullscreen" : "windowed";
+        document.documentElement.dataset.terminalInitialForm = window["__secondBrainTerminalInitialForm"];
+      }
+    </script>
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>{title}</title>

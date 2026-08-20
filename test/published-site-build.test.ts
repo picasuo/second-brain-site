@@ -17,6 +17,43 @@ test("Notes Index Filter Prompt 在窄屏以 16px 输入文字避免 iOS 聚焦�
   expect(prompt).toMatch(/@media \(max-width: 560px\)[\s\S]*?\.cmdline-mirror,\s*\.cmd-input\s*\{[\s\S]*?font-size:\s*16px;/u);
 });
 
+test("Terminal Window Shell 的页面布局直接使用内容容器宽度", async () => {
+  const [notesIndex, publishedNote] = await Promise.all([
+    readFile(new URL("../src/pages/notes/index.astro", import.meta.url), "utf8"),
+    readFile(new URL("../src/pages/notes/[...slug].astro", import.meta.url), "utf8"),
+  ]);
+
+  expect(notesIndex).toContain(".notes-index { width: 100%; }");
+  expect(notesIndex).not.toContain(".notes-index { max-width:");
+  expect(publishedNote).toContain(".terminal-note { width: 100%; }");
+  expect(publishedNote).toContain(".note-body { grid-area: content; width: 100%;");
+  expect(publishedNote).toContain(".terminal-note .note-header { width: 100%;");
+  expect(publishedNote).toContain(".terminal-note .note-layout { display: grid; grid-template-columns: minmax(12.5rem, 16rem) minmax(0, 1fr);");
+  expect(publishedNote).not.toContain(".terminal-window.is-fullscreen");
+});
+
+test("Terminal Window Shell 仅在首次加载时按 700px 断点选择默认形态", async () => {
+  const [baseLayout, terminalShell] = await Promise.all([
+    readFile(new URL("../src/layouts/BaseLayout.astro", import.meta.url), "utf8"),
+    readFile(new URL("../src/layouts/TerminalShell.astro", import.meta.url), "utf8"),
+  ]);
+
+  expect(baseLayout).toContain('window.matchMedia("(max-width: 699px)").matches ? "fullscreen" : "windowed"');
+  expect(baseLayout.match(/window\.matchMedia\("\(max-width: 699px\)"\)/gu)).toHaveLength(1);
+  expect(baseLayout).toContain('window["__secondBrainTerminalInitialForm"] === undefined');
+  expect(terminalShell).toMatch(/const presentation: WindowPresentation = \{\s*form: document\.documentElement\.dataset\.terminalInitialForm === "fullscreen" \? "fullscreen" : "windowed",/u);
+  expect(terminalShell).toMatch(/@media \(max-width: 699px\) \{\s*html\[data-terminal-initial-form="fullscreen"\] \.terminal-window \{/u);
+  expect(terminalShell).toContain('document.documentElement.removeAttribute("data-terminal-initial-form");');
+});
+
+test("Notes Index 表格在桌面窗口中按均衡轨道分配三列", async () => {
+  const notesIndex = await readFile(new URL("../src/pages/notes/index.astro", import.meta.url), "utf8");
+
+  expect(notesIndex).toContain("grid-template-columns: minmax(7rem, .75fr) minmax(0, 1.5fr) minmax(15rem, 1.75fr);");
+  expect(notesIndex).toContain("gap: var(--space-5);");
+  expect(notesIndex).not.toContain("grid-template-columns: 96px minmax(0, 1fr) 270px;");
+});
+
 test("a Vault Revision with one Published Note produces a Notes Index and public note page", async () => {
   const outputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
   temporaryDirectories.push(outputDirectory);

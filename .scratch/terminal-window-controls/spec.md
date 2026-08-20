@@ -8,7 +8,8 @@ Terminal Window Shell 已具备 macOS 风格的三色控件外观，但控件尚
 
 ## Interaction Model
 
-- **Terminal Window Form** 只有三种：`windowed`（默认）、`fullscreen`、`floating-miniature`。
+- **Terminal Window Form** 只有三种：`windowed`、`fullscreen`、`floating-miniature`。首次加载时，700px 及以上的宽视口默认 `windowed`，低于 700px 的窄视口默认 `fullscreen`。
+- 初始形态只在完整页面加载时按视口决定一次。访客主动切换后，当前形态在 ClientRouter 路由跳转、视口缩放和屏幕旋转中保持；刷新后再按当时视口重新选择默认形态。
 - 红灯将窗口暂存为页面左上角的 **App Icon**。App Icon 不是窗口形态；它保存收起前的 `windowed` 或 `fullscreen` 形态，点击后恢复该形态。
 - 黄灯仅在 `windowed` 时可用。点击后，真实的 Terminal Window Shell 缩放并移动到左下角，进入 `floating-miniature`；点击小窗任意位置恢复原 `windowed` 形态。
 - `fullscreen` 时黄灯必须显式禁用，不能通过指针或键盘触发。
@@ -32,7 +33,8 @@ Terminal Window Shell 已具备 macOS 风格的三色控件外观，但控件尚
 
 ## Acceptance Criteria
 
-- 默认显示窗口化 Terminal Window Shell。
+- 首次加载时，700px 及以上默认显示窗口化 Terminal Window Shell，低于 700px 默认显示沉浸全屏 Terminal Window Shell，首帧不闪现另一种形态。
+- 访客主动切换形态后，路由跳转和视口变化不覆盖其选择；刷新页面后重新按当前视口选择默认形态。
 - 红灯收起为左上角 app icon；点击 icon 恢复收起前形态。
 - 黄灯只在窗口化可操作；进入左下角小窗后点击小窗恢复窗口化。
 - 绿灯与标题栏双击都能切换窗口化 / 沉浸全屏；全屏时黄灯不可用。
@@ -53,6 +55,7 @@ Terminal Window Shell 已具备 macOS 风格的三色控件外观，但控件尚
 - 窗口动画完成只接受 Terminal Window 自身的 `transform` 结束事件，控件 hover 动画不会提前结束窗口动画；动画进行时拒绝新的窗口形态操作。
 - `.window-controls` 在标题栏 Grid 中使用内容宽度与左侧对齐，避免默认拉伸占满左侧网格列并误拦截标题栏双击。
 - App Icon 使用 `src/assets/terminal-app-icon.png`，由 Astro 作为本地静态资源输出。
+- 初始形态使用与 Published Note 正文目录一致的 700px 断点；完整页面加载时的一次性根节点标记负责首帧布局，客户端状态接管后移除该标记，ClientRouter 换页不会重新创建标记，也不监听断点变化来覆盖访客选择。
 
 ## Verification
 

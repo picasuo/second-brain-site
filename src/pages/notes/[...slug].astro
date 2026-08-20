@@ -78,7 +78,7 @@ const tocItems = note.tableOfContents.map((item, index) => {
 </BaseLayout>
 
 <style is:global>
-  .note-body { grid-area: content; min-width: 0; max-width: 66ch; color: var(--ink); font-family: var(--font-mono); font-size: clamp(0.94rem, 1.45vw, 1rem); line-height: 1.9; }
+  .note-body { grid-area: content; width: 100%; min-width: 0; color: var(--ink); font-family: var(--font-mono); font-size: clamp(0.94rem, 1.45vw, 1rem); line-height: 1.9; }
   .note-body > :first-child { margin-top: 0; }
   .note-body > :last-child { margin-bottom: 0; }
   .note-body p { margin: 0 0 1.15rem; }
@@ -113,9 +113,9 @@ const tocItems = note.tableOfContents.map((item, index) => {
   .note-body th { color: var(--accent-strong); background: var(--accent-wash); }
   .note-body img { display: block; max-width: 100%; height: auto; }
 
-  .terminal-note { max-width: 70rem; }
+  .terminal-note { width: 100%; }
   .terminal-note > .terminal-command { margin-bottom: clamp(1.6rem, 3vw, 2.6rem); }
-  .terminal-note .note-header { max-width: 50rem; margin-bottom: 2.5rem; padding-bottom: 1.6rem; border-bottom: 1px solid var(--rule-soft); }
+  .terminal-note .note-header { width: 100%; margin-bottom: 2.5rem; padding-bottom: 1.6rem; border-bottom: 1px solid var(--rule-soft); }
   .terminal-note h1 { margin: 0; color: var(--ink); font-family: var(--font-mono); font-size: clamp(1.25rem, 3vw, 1.7rem); font-weight: 700; line-height: 1.4; }
   .note-metadata-kv { display: flex; flex-wrap: wrap; gap: .55rem 1.4rem; margin: 1.2rem 0 0; color: var(--muted); font-family: var(--font-mono); font-size: 14px; line-height: 1.6; }
   .note-metadata-kv div { display: flex; gap: .55rem; align-items: baseline; }
@@ -137,7 +137,7 @@ const tocItems = note.tableOfContents.map((item, index) => {
   .toc-branch, .toc-number { color: var(--muted-faint); }
 
   @media (min-width: 700px) {
-    .terminal-note .note-layout { display: grid; grid-template-columns: minmax(12.5rem, 16rem) minmax(0, 50rem); grid-template-areas: none; gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+    .terminal-note .note-layout { display: grid; grid-template-columns: minmax(12.5rem, 16rem) minmax(0, 1fr); grid-template-areas: none; gap: clamp(2rem, 5vw, 5rem); align-items: start; }
     .wide-table-of-contents { position: sticky; top: 0; display: block; padding: .15rem 1rem .2rem 0; color: var(--muted); font-size: .82rem; line-height: 1.9; }
     .wide-table-of-contents > strong { display: block; margin-bottom: 1rem; color: var(--ink); font: 700 .82rem var(--font-mono); }
     .wide-table-of-contents > strong span { color: var(--accent); }
