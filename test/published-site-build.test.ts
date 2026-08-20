@@ -46,6 +46,14 @@ test("Terminal Window Shell 仅在首次加载时按 700px 断点选择默认形
   expect(terminalShell).toContain('document.documentElement.removeAttribute("data-terminal-initial-form");');
 });
 
+test("Terminal footer navigation cannot expand its window on narrow viewports", async () => {
+  const terminalShell = await readFile(new URL("../src/layouts/TerminalShell.astro", import.meta.url), "utf8");
+
+  expect(terminalShell).toMatch(/\.terminal-window \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%;/u);
+  expect(terminalShell).toContain(".terminal-footer { min-width: 0; max-width: 100%; overflow: hidden;");
+  expect(terminalShell).toContain(".terminal-footer-navigation { display: flex; align-items: stretch; width: 100%; max-width: 100%; overflow: hidden;");
+});
+
 test("Notes Index 表格在桌面窗口中按均衡轨道分配三列", async () => {
   const notesIndex = await readFile(new URL("../src/pages/notes/index.astro", import.meta.url), "utf8");
 
@@ -185,7 +193,9 @@ test("a Notes Index renders a local filter prompt, static terminal output, Canon
   expect(notesIndex).toContain("#engineering");
   expect(notesIndex).toContain("#运维");
   expect(notesIndex).toContain('href="/notes/latest-note/"');
-  expect(notesIndex).toContain("← Back to home");
+  expect(notesIndex).toContain('class="terminal-footer-back"');
+  expect(notesIndex).toContain('aria-label="返回首页"');
+  expect(notesIndex).not.toContain("Back to home");
   expect(notesIndex).not.toContain("READ");
   expect(notesIndex).toContain("-rw-r--r--");
   expect(notesIndex).not.toContain("topics");
@@ -210,7 +220,8 @@ test("an empty Publish Set renders its confirmed zero-note state without filters
   expect(notesIndex).not.toContain("grep -i");
   expect(notesIndex).not.toContain("--all");
   expect(notesIndex).not.toContain("DATE");
-  expect(notesIndex).toContain("← Back to home");
+  expect(notesIndex).toContain('aria-label="返回首页"');
+  expect(notesIndex).not.toContain("Back to home");
 });
 
 test("a Published Note without a valid date prevents publication with its source path", async () => {

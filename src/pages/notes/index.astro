@@ -1,6 +1,7 @@
 ---
 import NotesIndexFilterPrompt from "../../components/NotesIndexFilterPrompt.astro";
 import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astro";
+import TerminalFooterNavigation from "../../components/TerminalFooterNavigation.astro";
 import { publishedNotes } from "../../generated/published-notes";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
@@ -61,7 +62,7 @@ const hasPublishedNotes = publishedNotes.length > 0;
       )}
     </section>
 
-  <a slot="footer" class="terminal-footer-link" href="/">← Back to home</a>
+  <TerminalFooterNavigation slot="footer" backHref="/" backLabel="返回首页" />
 </BaseLayout>
 
 <style is:global>

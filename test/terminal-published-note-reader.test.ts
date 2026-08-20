@@ -11,10 +11,9 @@ afterEach(async () => {
   await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
 });
 
-test("a Published Note reader uses the final filename, preserves Markdown headings, and adapts its Table of Contents", async () => {
+test("a Published Note reader uses the final filename and navigates the complete Published Note sequence", async () => {
   const metadataOutputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  const markdownOutputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
-  temporaryDirectories.push(metadataOutputDirectory, markdownOutputDirectory);
+  temporaryDirectories.push(metadataOutputDirectory);
 
   await buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/publish-set-metadata/", import.meta.url),
@@ -23,6 +22,7 @@ test("a Published Note reader uses the final filename, preserves Markdown headin
 
   const titledNote = await readFile(join(metadataOutputDirectory, "notes", "alpha-release", "index.html"), "utf8");
   const filenameFallbackNote = await readFile(join(metadataOutputDirectory, "notes", "latest-note", "index.html"), "utf8");
+  const lastNote = await readFile(join(metadataOutputDirectory, "notes", "zulu-release", "index.html"), "utf8");
 
   expect(titledNote).toContain("alpha.md");
   expect(titledNote).toContain("view ~/notes/alpha.md");
@@ -30,11 +30,26 @@ test("a Published Note reader uses the final filename, preserves Markdown headin
   expect(titledNote).toContain("2026-08-04");
   expect(titledNote).toContain("engineering");
   expect(titledNote).toContain("运维");
-  expect(titledNote).toContain("← Back to notes");
+  expect(titledNote).toContain('class="terminal-footer-back"');
+  expect(titledNote).toContain('aria-label="返回笔记列表"');
   expect(titledNote).toContain('href="/notes/"');
+  expect(titledNote).toContain('aria-label="上一篇：latest-note"');
+  expect(titledNote).toContain('href="/notes/latest-note/"');
+  expect(titledNote).toContain('aria-label="下一篇：Zulu"');
+  expect(titledNote).toContain('href="/notes/zulu-release/"');
+  expect(titledNote).not.toContain("Back to notes");
   expect(titledNote).not.toContain("alpha-release.md");
   expect(titledNote).not.toContain("read");
   expect(filenameFallbackNote).toContain("<h1>latest-note</h1>");
+  expect(filenameFallbackNote).toContain('aria-label="没有上一篇"');
+  expect(filenameFallbackNote).toContain('aria-label="下一篇：Alpha"');
+  expect(lastNote).toContain('aria-label="上一篇：Alpha"');
+  expect(lastNote).toContain('aria-label="没有下一篇"');
+});
+
+test("a Published Note reader preserves Markdown headings and adapts its Table of Contents", async () => {
+  const markdownOutputDirectory = await mkdtemp(join(tmpdir(), "second-brain-site-"));
+  temporaryDirectories.push(markdownOutputDirectory);
 
   await buildPublishedSite({
     vaultRevisionPath: new URL("./fixtures/linked-rendering/", import.meta.url),

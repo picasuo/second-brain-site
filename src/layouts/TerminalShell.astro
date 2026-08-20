@@ -515,6 +515,8 @@ const hasFooter = Astro.slots.has("footer");
     z-index: 1;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    max-width: 100%;
     width: min(100%, 60rem);
     height: 100%;
     margin: 0 auto;
@@ -691,10 +693,25 @@ const hasFooter = Astro.slots.has("footer");
   .window-spacer { min-width: 2.7rem; }
 
   .terminal-body { min-height: 0; padding: clamp(1.8rem, 3vw, 3.25rem); overflow-y: auto; overscroll-behavior: contain; }
-  .terminal-footer { border-top: 1px solid var(--rule-soft); }
-  .terminal-footer-link { display: block; padding: 1rem clamp(1.3rem, 3vw, 3.25rem); color: var(--muted-strong); font: 700 .8rem var(--font-mono); text-decoration: none; white-space: nowrap; transition: color 140ms ease, background-color 140ms ease; }
-  .terminal-footer-link:hover { color: var(--accent-strong); background: var(--accent-wash); }
-  .terminal-footer-link:active { background: var(--accent-wash-strong); }
+  .terminal-footer { min-width: 0; max-width: 100%; overflow: hidden; border-top: 1px solid var(--rule-soft); }
+  .terminal-footer-navigation { display: flex; align-items: stretch; width: 100%; max-width: 100%; overflow: hidden; gap: var(--space-2); min-width: 0; padding: var(--space-2) var(--space-3); font: 700 .75rem var(--font-mono);justify-content:space-between; }
+  .terminal-footer-sequence{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:var(--space-2);
+  }
+  .terminal-footer-back,
+  .terminal-footer-adjacent { display: flex; align-items: center; min-height: var(--space-6); border: 1px solid var(--rule); border-radius: var(--radius-md); color: var(--muted-strong); text-decoration: none; transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease; }
+  .terminal-footer-back { flex: 0 0 var(--space-6); justify-content: center; }
+  .terminal-footer-adjacent { flex: 1 1 0; gap: var(--space-2); min-width: 0; padding: var(--space-2) var(--space-3); }
+  .terminal-footer-adjacent > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .terminal-footer-next { justify-content: flex-end; text-align: right; }
+  .terminal-footer-icon { flex: 0 0 .875rem; width: .875rem; height: .875rem; fill: none; stroke: var(--accent); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+  .terminal-footer-back:hover,
+  .terminal-footer-adjacent:hover { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-wash); }
+  .terminal-footer-back:active,
+  .terminal-footer-adjacent:active { background: var(--accent-wash-strong); }
+  .terminal-footer-adjacent.is-disabled { cursor: default; opacity: .3; }
 
   @media (max-width: 43rem) {
     .terminal-shell { padding: clamp(1.5rem, 4dvh, 3rem) .75rem; }
@@ -704,6 +721,6 @@ const hasFooter = Astro.slots.has("footer");
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .terminal-footer-link, .terminal-app-icon, .window-control { transition: none; }
+    .terminal-footer-back, .terminal-footer-adjacent, .terminal-app-icon, .window-control { transition: none; }
   }
 </style>

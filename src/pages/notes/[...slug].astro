@@ -1,16 +1,21 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import TerminalCommandDisplay from "../../components/TerminalCommandDisplay.astro";
+import TerminalFooterNavigation from "../../components/TerminalFooterNavigation.astro";
 import { publishedNotes } from "../../generated/published-notes";
 
 export function getStaticPaths() {
-  return publishedNotes.map((note) => ({
+  return publishedNotes.map((note, index) => ({
     params: { slug: note.noteUrl.slice("/notes/".length, -1) },
-    props: { note },
+    props: {
+      note,
+      previousNote: publishedNotes[index - 1],
+      nextNote: publishedNotes[index + 1],
+    },
   }));
 }
 
-const { note } = Astro.props;
+const { note, previousNote, nextNote } = Astro.props;
 const tocItems = note.tableOfContents.map((item, index) => {
   const sectionIndex = note.tableOfContents.slice(0, index + 1).filter((candidate) => candidate.depth === 2).length;
   const isLastTopLevel = item.depth === 2 && note.tableOfContents.slice(index + 1).every((candidate) => candidate.depth !== 2);
@@ -74,7 +79,14 @@ const tocItems = note.tableOfContents.map((item, index) => {
       </div>
     </article>
 
-  <a slot="footer" class="terminal-footer-link" href="/notes/">← Back to notes</a>
+  <TerminalFooterNavigation
+    slot="footer"
+    backHref="/notes/"
+    backLabel="返回笔记列表"
+    showSequence
+    previousNote={previousNote}
+    nextNote={nextNote}
+  />
 </BaseLayout>
 
 <style is:global>
@@ -151,9 +163,6 @@ const tocItems = note.tableOfContents.map((item, index) => {
     .toc-mobile { display: none; }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .terminal-footer-link { transition: none; }
-  }
 </style>
 
 <script>

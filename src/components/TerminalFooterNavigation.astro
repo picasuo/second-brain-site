@@ -1,0 +1,76 @@
+---
+interface AdjacentNote {
+  noteUrl: string;
+  title: string;
+}
+
+interface Props {
+  backHref: string;
+  backLabel: string;
+  showSequence?: boolean;
+  previousNote?: AdjacentNote;
+  nextNote?: AdjacentNote;
+}
+
+const {
+  backHref,
+  backLabel,
+  showSequence = false,
+  previousNote,
+  nextNote,
+} = Astro.props;
+---
+
+<nav class="terminal-footer-navigation" aria-label="页面导航">
+  <a class="terminal-footer-back" href={backHref} aria-label={backLabel} title={backLabel}>
+    <svg class="terminal-footer-icon" aria-hidden="true" viewBox="0 0 24 24">
+      <path d="m19 12H5m7 7-7-7 7-7"></path>
+    </svg>
+  </a>
+
+  {showSequence && (
+    <>
+      {previousNote ? (
+        <a
+          class="terminal-footer-adjacent terminal-footer-previous"
+          href={previousNote.noteUrl}
+          rel="prev"
+          aria-label={`上一篇：${previousNote.title}`}
+          title={previousNote.title}
+        >
+          <svg class="terminal-footer-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
+          <span>{previousNote.title}</span>
+        </a>
+      ) : (
+        <span class="terminal-footer-adjacent terminal-footer-previous is-disabled" role="link" aria-disabled="true" aria-label="没有上一篇">
+          <svg class="terminal-footer-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m15 18-6-6 6-6"></path>
+          </svg>
+        </span>
+      )}
+
+      {nextNote ? (
+        <a
+          class="terminal-footer-adjacent terminal-footer-next"
+          href={nextNote.noteUrl}
+          rel="next"
+          aria-label={`下一篇：${nextNote.title}`}
+          title={nextNote.title}
+        >
+          <span>{nextNote.title}</span>
+          <svg class="terminal-footer-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m9 18 6-6-6-6"></path>
+          </svg>
+        </a>
+      ) : (
+        <span class="terminal-footer-adjacent terminal-footer-next is-disabled" role="link" aria-disabled="true" aria-label="没有下一篇">
+          <svg class="terminal-footer-icon" aria-hidden="true" viewBox="0 0 24 24">
+            <path d="m9 18 6-6-6-6"></path>
+          </svg>
+        </span>
+      )}
+    </>
+  )}
+</nav>
